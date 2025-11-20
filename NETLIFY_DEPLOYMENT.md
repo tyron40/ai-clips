@@ -49,9 +49,10 @@ Before deploying, you **MUST** set up the following environment variables in you
    - Choose your Git provider (GitHub, GitLab, etc.)
    - Select your repository
 
-2. **Configure Build Settings** (should auto-detect from netlify.toml)
+2. **Configure Build Settings** (auto-configured via netlify.toml)
    - Build command: `npm run build`
    - Publish directory: `.next`
+   - **Note:** If the publish directory is incorrectly set, you may see an error about it being the same as the base directory. This is already fixed in `netlify.toml`.
 
 3. **Add Environment Variables** (see section above)
    - Add all 4 required variables
