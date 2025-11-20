@@ -188,8 +188,8 @@ export default function Home() {
             <div className="form-section">
               {generationMode === 'luma' && (
                 <PromptForm
-                  onSubmit={(id, prompt, imageUrl, duration) =>
-                    handleVideoCreated(id, prompt, imageUrl, duration, 'luma')
+                  onSubmit={(id, prompt, imageUrl, duration, dialogue, audioUrl) =>
+                    handleVideoCreated(id, prompt, imageUrl, duration, 'luma', undefined, undefined, undefined, undefined, dialogue, audioUrl)
                   }
                 />
               )}
