@@ -1,8 +1,8 @@
 'use client';
 
-import { Film, Image as ImageIcon, Sparkles, Clapperboard, Users, Wand2 } from 'lucide-react';
+import { Film, Image as ImageIcon, Sparkles, Clapperboard, Users, Wand2, MessageSquare } from 'lucide-react';
 
-export type GenerationMode = 'luma' | 'huggingface' | 'movie-scene' | 'multi-image' | 'hugging-people' | 'image-motion';
+export type GenerationMode = 'luma' | 'huggingface' | 'movie-scene' | 'multi-image' | 'hugging-people' | 'image-motion' | 'talking-character';
 
 interface ModeOption {
   id: GenerationMode;
@@ -24,6 +24,12 @@ const modes: ModeOption[] = [
     title: 'Image to Video',
     description: 'Animate any image with AI motion',
     icon: ImageIcon,
+  },
+  {
+    id: 'talking-character',
+    title: 'Talking Character',
+    description: 'Create realistic talking videos with lip-sync',
+    icon: MessageSquare,
     badge: 'New'
   },
   {
@@ -44,7 +50,6 @@ const modes: ModeOption[] = [
     title: 'Hugging People',
     description: 'Create heartwarming hugging videos from two images',
     icon: Users,
-    badge: 'New'
   },
   {
     id: 'image-motion',

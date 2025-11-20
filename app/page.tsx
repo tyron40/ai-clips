@@ -10,6 +10,7 @@ import MovieSceneForm from '@/components/MovieSceneForm';
 import MultiImageForm from '@/components/MultiImageForm';
 import HuggingPeopleForm from '@/components/HuggingPeopleForm';
 import ImageMotionForm from '@/components/ImageMotionForm';
+import TalkingCharacterForm from '@/components/TalkingCharacterForm';
 import { supabase, VideoRecord } from '@/lib/supabase';
 import { History, Plus } from 'lucide-react';
 
@@ -108,7 +109,8 @@ export default function Home() {
     style?: string,
     transition?: string,
     images?: string[],
-    motionType?: string
+    motionType?: string,
+    dialogue?: string
   ) => {
     setVideoState({
       id,
@@ -127,7 +129,8 @@ export default function Home() {
         style,
         transition,
         images: images ? JSON.stringify(images) : undefined,
-        motion_type: motionType
+        motion_type: motionType,
+        dialogue
       });
     } catch (err) {
       console.error('Failed to save video to database:', err);
@@ -223,6 +226,14 @@ export default function Home() {
                 <ImageMotionForm
                   onSubmit={(id, imageUrl, motionType) =>
                     handleVideoCreated(id, `Image animation with ${motionType} motion`, imageUrl, '10s', 'image-motion', undefined, undefined, undefined, motionType)
+                  }
+                />
+              )}
+
+              {generationMode === 'talking-character' && (
+                <TalkingCharacterForm
+                  onSubmit={(id, prompt, imageUrl, dialogue) =>
+                    handleVideoCreated(id, prompt, imageUrl, '5s', 'talking-character', undefined, undefined, undefined, undefined, dialogue)
                   }
                 />
               )}

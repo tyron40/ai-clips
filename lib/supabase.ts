@@ -20,10 +20,11 @@ export interface VideoRecord {
   error_message?: string;
   created_at: string;
   completed_at?: string;
-  generation_mode?: 'luma' | 'huggingface' | 'movie-scene' | 'multi-image' | 'hugging-people' | 'image-motion';
+  generation_mode?: 'luma' | 'huggingface' | 'movie-scene' | 'multi-image' | 'hugging-people' | 'image-motion' | 'talking-character';
   style?: string;
   transition?: string;
   images?: string[];
   motion_type?: string;
+  dialogue?: string;
   metadata?: Record<string, any>;
 }
