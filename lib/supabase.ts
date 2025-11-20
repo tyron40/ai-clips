@@ -17,6 +17,7 @@ export interface VideoRecord {
   duration: string;
   status: 'queued' | 'processing' | 'completed' | 'failed';
   video_url?: string;
+  audio_url?: string;
   error_message?: string;
   created_at: string;
   completed_at?: string;

@@ -5,7 +5,7 @@ import { MessageSquare, Upload, User, Volume2 } from 'lucide-react';
 import { uploadImage, validateImageFile } from '@/lib/uploadImage';
 
 interface TalkingCharacterFormProps {
-  onSubmit: (jobId: string, prompt: string, imageUrl: string, dialogue: string) => void;
+  onSubmit: (jobId: string, prompt: string, imageUrl: string, dialogue: string, audioUrl: string, voiceStyle: string) => void;
 }
 
 const voiceStyles = [
@@ -67,6 +67,33 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
         throw new Error('Please enter dialogue for the character to say');
       }
 
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase configuration missing');
+      }
+
+      const speechResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speech`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: dialogue,
+          voiceStyle: voiceStyle
+        }),
+      });
+
+      if (!speechResponse.ok) {
+        const errorData = await speechResponse.json();
+        throw new Error(errorData.error || 'Failed to generate speech audio');
+      }
+
+      const audioBlob = await speechResponse.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
       const enhancedPrompt = `Create a realistic talking head video. The person in the image is speaking with natural lip-sync movements and facial expressions. ${voiceStyle} voice style. Natural head movements, realistic eye blinks, and subtle facial animations that match the spoken dialogue. Professional lighting, high quality, natural skin tones. The character maintains eye contact and appears engaged while speaking.`;
 
       const response = await fetch('/api/luma/create', {
@@ -85,7 +112,7 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
         throw new Error(data.error || 'Failed to create talking character video');
       }
 
-      onSubmit(data.id, enhancedPrompt, characterImage, dialogue);
+      onSubmit(data.id, enhancedPrompt, characterImage, dialogue, audioUrl, voiceStyle);
       setDialogue('');
       setCharacterImage(null);
     } catch (err) {

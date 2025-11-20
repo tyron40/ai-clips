@@ -18,6 +18,7 @@ interface VideoState {
   id: string;
   status: 'queued' | 'processing' | 'completed' | 'failed';
   videoUrl?: string;
+  audioUrl?: string;
   error?: string;
   progress?: number;
 }
@@ -110,7 +111,8 @@ export default function Home() {
     transition?: string,
     images?: string[],
     motionType?: string,
-    dialogue?: string
+    dialogue?: string,
+    audioUrl?: string
   ) => {
     setVideoState({
       id,
@@ -130,7 +132,8 @@ export default function Home() {
         transition,
         images: images ? JSON.stringify(images) : undefined,
         motion_type: motionType,
-        dialogue
+        dialogue,
+        audio_url: audioUrl
       });
     } catch (err) {
       console.error('Failed to save video to database:', err);
@@ -148,7 +151,8 @@ export default function Home() {
     setVideoState({
       id: video.luma_id,
       status: 'completed',
-      videoUrl: video.video_url
+      videoUrl: video.video_url,
+      audioUrl: video.audio_url
     });
     setShowGallery(false);
   };
@@ -232,8 +236,8 @@ export default function Home() {
 
               {generationMode === 'talking-character' && (
                 <TalkingCharacterForm
-                  onSubmit={(id, prompt, imageUrl, dialogue) =>
-                    handleVideoCreated(id, prompt, imageUrl, '5s', 'talking-character', undefined, undefined, undefined, undefined, dialogue)
+                  onSubmit={(id, prompt, imageUrl, dialogue, audioUrl) =>
+                    handleVideoCreated(id, prompt, imageUrl, '5s', 'talking-character', undefined, undefined, undefined, undefined, dialogue, audioUrl)
                   }
                 />
               )}
@@ -272,7 +276,7 @@ export default function Home() {
         )}
 
         {videoState?.status === 'completed' && videoState.videoUrl && (
-          <VideoResult videoUrl={videoState.videoUrl} onReset={handleReset} />
+          <VideoResult videoUrl={videoState.videoUrl} audioUrl={videoState.audioUrl} onReset={handleReset} />
         )}
       </main>
 
