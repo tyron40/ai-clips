@@ -35,8 +35,10 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
     const fileSize = (file.size / 1024 / 1024).toFixed(2);
     setUploadProgress(`Processing ${fileSize}MB image...`);
 
+    let progressInterval: NodeJS.Timeout | null = null;
+
     try {
-      const progressInterval = setInterval(() => {
+      progressInterval = setInterval(() => {
         if (uploadingRef.current) {
           setProgressPercent((prev) => {
             if (prev < 90) return prev + 10;
@@ -59,21 +61,21 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
         }, 1500);
       }
 
-      const uploadTimeout = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Upload timeout - please try a smaller image or check your connection')), 60000);
-      });
+      console.log('[UPLOAD] Starting upload process...');
+      const url = await uploadImage(file);
 
-      const url = await Promise.race([uploadImage(file), uploadTimeout]);
-      clearInterval(progressInterval);
+      if (progressInterval) clearInterval(progressInterval);
       setProgressPercent(100);
       setUploadProgress('Upload complete!');
+      console.log('[UPLOAD] Success! URL:', url);
       onUploadComplete(url);
 
       e.target.value = '';
     } catch (err) {
+      if (progressInterval) clearInterval(progressInterval);
       const errorMessage = err instanceof Error ? err.message : 'Upload failed';
-      console.error('[MOBILE] Upload error:', errorMessage);
-      setError(errorMessage);
+      console.error('[MOBILE] Upload error:', errorMessage, err);
+      setError(`Upload failed: ${errorMessage}`);
       setProgressPercent(0);
       e.target.value = '';
     } finally {
@@ -91,12 +93,10 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
       <input
         id="image-upload"
         type="file"
-        accept="image/*,image/heic,image/heif"
-        capture="environment"
+        accept="image/*"
         onChange={handleFileChange}
         disabled={uploading}
         className="file-input"
-        multiple={false}
       />
       <label htmlFor="image-upload" className={`file-upload-label ${uploading ? 'uploading' : ''}`}>
         {uploading ? <Loader2 size={20} className="spin" /> : <Upload size={20} />}

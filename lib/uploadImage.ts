@@ -64,13 +64,14 @@ async function compressImage(file: File): Promise<Blob> {
 
 export async function uploadImage(file: File): Promise<string> {
   console.log(`[UPLOAD START] File: ${file.name}, Type: ${file.type}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+  console.log('[SUPABASE CHECK] Client initialized:', !!supabase);
 
   let uploadFile: Blob | File = file;
   const startTime = Date.now();
 
-  // Skip compression for very small files or if type is problematic
+  // Skip compression for very small files, unknown types, or HEIC/HEIF (not supported by canvas)
   const shouldCompress = file.size > 500 * 1024 &&
-    (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png');
+    (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png' || file.type === 'image/webp');
 
   if (shouldCompress) {
     try {
@@ -103,7 +104,9 @@ export async function uploadImage(file: File): Promise<string> {
   const uploadStartTime = Date.now();
 
   try {
-    const uploadPromise = supabase.storage
+    console.log('[SUPABASE] Starting upload to bucket "images"');
+
+    const { data, error } = await supabase.storage
       .from('images')
       .upload(fileName, uploadFile, {
         cacheControl: '3600',
@@ -111,21 +114,19 @@ export async function uploadImage(file: File): Promise<string> {
         contentType: 'image/jpeg'
       });
 
-    const uploadTimeout = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        console.error('[UPLOAD TIMEOUT] - Network issue or Supabase problem');
-        reject(new Error('Upload timeout - check network connection'));
-      }, 45000);
-    });
-
-    const { data, error } = await Promise.race([uploadPromise, uploadTimeout]);
+    console.log('[SUPABASE] Upload response:', { data, error });
 
     const uploadTime = Date.now() - uploadStartTime;
     console.log(`[UPLOAD DONE] Completed in ${uploadTime}ms`);
 
     if (error) {
-      console.error('[UPLOAD ERROR]', error);
+      console.error('[UPLOAD ERROR] Full error:', JSON.stringify(error));
       throw new Error(`Upload failed: ${error.message}`);
+    }
+
+    if (!data) {
+      console.error('[UPLOAD ERROR] No data returned from Supabase');
+      throw new Error('Upload failed: No data returned');
     }
 
     const { data: { publicUrl } } = supabase.storage
