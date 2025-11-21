@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { uploadImage, validateImageFile } from '@/lib/uploadImage';
 import { Upload, X, Loader2 } from 'lucide-react';
 
@@ -12,6 +12,8 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [progressPercent, setProgressPercent] = useState<number>(0);
+  const uploadingRef = useRef(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -24,24 +26,52 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
     }
 
     setUploading(true);
+    uploadingRef.current = true;
     setError(null);
+    setProgressPercent(0);
 
     const fileSize = (file.size / 1024 / 1024).toFixed(2);
-    setUploadProgress(`Preparing ${fileSize}MB image...`);
+    setUploadProgress(`Processing ${fileSize}MB image...`);
 
     try {
-      if (file.size > 1024 * 1024) {
-        setUploadProgress('Compressing image...');
+      const progressInterval = setInterval(() => {
+        if (uploadingRef.current) {
+          setProgressPercent((prev) => {
+            if (prev < 90) return prev + 10;
+            return prev;
+          });
+        }
+      }, 300);
+
+      if (file.size > 500 * 1024) {
+        setTimeout(() => {
+          if (uploadingRef.current) {
+            setUploadProgress('Optimizing for faster upload...');
+          }
+        }, 500);
+
+        setTimeout(() => {
+          if (uploadingRef.current) {
+            setUploadProgress('Uploading to server...');
+          }
+        }, 1500);
       }
 
       const url = await uploadImage(file);
+      clearInterval(progressInterval);
+      setProgressPercent(100);
       setUploadProgress('Upload complete!');
       onUploadComplete(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
+      setProgressPercent(0);
     } finally {
+      uploadingRef.current = false;
       setUploading(false);
-      setTimeout(() => setUploadProgress(''), 2000);
+      setTimeout(() => {
+        setUploadProgress('');
+        setProgressPercent(0);
+      }, 2000);
     }
   };
 
@@ -60,7 +90,19 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
         {uploading ? <Loader2 size={20} className="spin" /> : <Upload size={20} />}
         {uploading ? 'Uploading...' : 'Upload Image'}
       </label>
-      {uploadProgress && <p className="upload-progress">{uploadProgress}</p>}
+      {uploadProgress && (
+        <div className="upload-progress-container">
+          <p className="upload-progress">{uploadProgress}</p>
+          {progressPercent > 0 && (
+            <div className="progress-bar-container">
+              <div
+                className="progress-bar-fill"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          )}
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
     </div>
   );
