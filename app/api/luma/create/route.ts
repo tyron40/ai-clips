@@ -7,6 +7,12 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[LUMA API] Environment check:', {
+      hasLumaKey: !!process.env.LUMA_API_KEY,
+      nodeEnv: process.env.NODE_ENV,
+      platform: process.platform,
+    });
+
     const clientId = getClientIdentifier(request);
     const { allowed, remaining, resetTime } = rateLimit(clientId, {
       maxRequests: 5,
@@ -32,6 +38,8 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.LUMA_API_KEY;
 
     if (!apiKey) {
+      console.error('[LUMA API] LUMA_API_KEY not found in environment variables');
+      console.error('[LUMA API] Available env vars:', Object.keys(process.env).filter(k => k.includes('LUMA') || k.includes('NEXT')));
       return NextResponse.json(
         { error: 'Luma AI is not configured. Please add your LUMA_API_KEY to the environment variables in Netlify.' },
         { status: 500 }
