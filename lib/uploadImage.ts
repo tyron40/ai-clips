@@ -67,9 +67,25 @@ export async function uploadImage(file: File): Promise<string> {
   console.log('[SUPABASE CHECK] Client initialized:', !!supabase);
 
   let uploadFile: Blob | File = file;
+  let finalContentType = file.type || 'image/jpeg';
+  let fileExt = 'jpg';
   const startTime = Date.now();
 
-  // Skip compression for very small files, unknown types, or HEIC/HEIF (not supported by canvas)
+  if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+    console.log('[HEIC/HEIF DETECTED] Uploading without compression');
+    finalContentType = 'image/heic';
+    fileExt = 'heic';
+  } else if (file.type === 'image/png') {
+    fileExt = 'png';
+    finalContentType = 'image/png';
+  } else if (file.type === 'image/gif') {
+    fileExt = 'gif';
+    finalContentType = 'image/gif';
+  } else if (file.type === 'image/webp') {
+    fileExt = 'webp';
+    finalContentType = 'image/webp';
+  }
+
   const shouldCompress = file.size > 500 * 1024 &&
     (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png' || file.type === 'image/webp');
 
@@ -88,6 +104,8 @@ export async function uploadImage(file: File): Promise<string> {
       uploadFile = await Promise.race([compressionPromise, timeoutPromise]);
       const compressionTime = Date.now() - startTime;
       console.log(`[COMPRESSION DONE] ${(file.size / 1024).toFixed(0)}KB -> ${(uploadFile.size / 1024).toFixed(0)}KB in ${compressionTime}ms`);
+      fileExt = 'jpg';
+      finalContentType = 'image/jpeg';
     } catch (err) {
       console.error('[COMPRESSION FAILED]', err);
       console.log('[FALLBACK] Using original file');
@@ -97,10 +115,9 @@ export async function uploadImage(file: File): Promise<string> {
     console.log('[SKIP COMPRESSION] File is small enough or unsupported type');
   }
 
-  const fileExt = 'jpg';
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-  console.log(`[UPLOAD START] Uploading to Supabase as ${fileName}`);
+  console.log(`[UPLOAD START] Uploading to Supabase as ${fileName} with type ${finalContentType}`);
   const uploadStartTime = Date.now();
 
   try {
@@ -111,7 +128,7 @@ export async function uploadImage(file: File): Promise<string> {
       .upload(fileName, uploadFile, {
         cacheControl: '3600',
         upsert: false,
-        contentType: 'image/jpeg'
+        contentType: finalContentType
       });
 
     console.log('[SUPABASE] Upload response:', { data, error });

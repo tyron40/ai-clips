@@ -107,7 +107,7 @@ export default function HuggingPeopleForm({ onSubmit }: HuggingPeopleFormProps) 
           <input
             ref={ref}
             type="file"
-            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif,.heic,.heif"
             onChange={(e) => handleFileSelect(imageNum, e)}
             disabled={loading || imageState.uploading}
             className="file-input"

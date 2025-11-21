@@ -124,7 +124,7 @@ export default function ImageMotionForm({ onSubmit }: ImageMotionFormProps) {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif,.heic,.heif"
               onChange={handleFileSelect}
               disabled={loading || uploading}
               className="file-input"
