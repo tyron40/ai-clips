@@ -71,7 +71,11 @@ export default function HuggingPeopleForm({ onSubmit }: HuggingPeopleFormProps) 
 
       const response = await fetch('/api/luma/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        cache: 'no-store',
         body: JSON.stringify({
           prompt: 'Two people hugging each other warmly, arms wrapped around each other in a close embrace. Emotional, heartfelt moment of connection.',
           imageUrl: image1.url.trim(),

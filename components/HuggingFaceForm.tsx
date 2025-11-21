@@ -68,7 +68,11 @@ export default function HuggingFaceForm({ onSubmit }: HuggingFaceFormProps) {
 
       const response = await fetch('/api/luma/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        cache: 'no-store',
         body: JSON.stringify({
           prompt: finalPrompt,
           imageUrl: finalImageUrl,

@@ -4,6 +4,7 @@ import { rateLimit, getClientIdentifier } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const revalidate = 0;
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +43,14 @@ export async function POST(request: NextRequest) {
       console.error('[LUMA API] Available env vars:', Object.keys(process.env).filter(k => k.includes('LUMA') || k.includes('NEXT')));
       return NextResponse.json(
         { error: 'Luma AI is not configured. Please add your LUMA_API_KEY to the environment variables in Netlify.' },
-        { status: 500 }
+        {
+          status: 500,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          }
+        }
       );
     }
 
@@ -65,6 +73,9 @@ export async function POST(request: NextRequest) {
         headers: {
           'X-RateLimit-Remaining': remaining.toString(),
           'X-RateLimit-Reset': new Date(resetTime).toISOString(),
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
         }
       }
     );

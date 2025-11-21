@@ -42,7 +42,9 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
         },
+        cache: 'no-store',
         body: JSON.stringify({
           prompt: prompt.trim(),
           imageUrl: imageUrl.trim() || undefined,
