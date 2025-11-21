@@ -63,46 +63,81 @@ async function compressImage(file: File): Promise<Blob> {
 }
 
 export async function uploadImage(file: File): Promise<string> {
+  console.log(`[UPLOAD START] File: ${file.name}, Type: ${file.type}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+
   let uploadFile: Blob | File = file;
   const startTime = Date.now();
 
-  if (file.size > 500 * 1024) {
+  // Skip compression for very small files or if type is problematic
+  const shouldCompress = file.size > 500 * 1024 &&
+    (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png');
+
+  if (shouldCompress) {
     try {
-      console.log(`Original image: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-      uploadFile = await compressImage(file);
+      console.log('[COMPRESSION START]');
+
+      const compressionPromise = compressImage(file);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          console.error('[COMPRESSION TIMEOUT] - Taking too long');
+          reject(new Error('Compression timeout'));
+        }, 15000);
+      });
+
+      uploadFile = await Promise.race([compressionPromise, timeoutPromise]);
       const compressionTime = Date.now() - startTime;
-      console.log(`Compressed to ${(uploadFile.size / 1024 / 1024).toFixed(2)}MB in ${compressionTime}ms`);
+      console.log(`[COMPRESSION DONE] ${(file.size / 1024).toFixed(0)}KB -> ${(uploadFile.size / 1024).toFixed(0)}KB in ${compressionTime}ms`);
     } catch (err) {
-      console.warn('Compression failed, uploading original:', err);
+      console.error('[COMPRESSION FAILED]', err);
+      console.log('[FALLBACK] Using original file');
       uploadFile = file;
     }
+  } else {
+    console.log('[SKIP COMPRESSION] File is small enough or unsupported type');
   }
 
   const fileExt = 'jpg';
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-  const filePath = fileName;
 
+  console.log(`[UPLOAD START] Uploading to Supabase as ${fileName}`);
   const uploadStartTime = Date.now();
-  const { data, error } = await supabase.storage
-    .from('images')
-    .upload(filePath, uploadFile, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: 'image/jpeg'
+
+  try {
+    const uploadPromise = supabase.storage
+      .from('images')
+      .upload(fileName, uploadFile, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: 'image/jpeg'
+      });
+
+    const uploadTimeout = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        console.error('[UPLOAD TIMEOUT] - Network issue or Supabase problem');
+        reject(new Error('Upload timeout - check network connection'));
+      }, 45000);
     });
 
-  const uploadTime = Date.now() - uploadStartTime;
-  console.log(`Upload completed in ${uploadTime}ms`);
+    const { data, error } = await Promise.race([uploadPromise, uploadTimeout]);
 
-  if (error) {
-    throw new Error(`Failed to upload image: ${error.message}`);
+    const uploadTime = Date.now() - uploadStartTime;
+    console.log(`[UPLOAD DONE] Completed in ${uploadTime}ms`);
+
+    if (error) {
+      console.error('[UPLOAD ERROR]', error);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('images')
+      .getPublicUrl(fileName);
+
+    console.log('[SUCCESS] URL:', publicUrl);
+    return publicUrl;
+  } catch (err) {
+    console.error('[FATAL ERROR]', err);
+    throw err instanceof Error ? err : new Error('Upload failed');
   }
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('images')
-    .getPublicUrl(filePath);
-
-  return publicUrl;
 }
 
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
