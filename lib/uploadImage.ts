@@ -1,15 +1,76 @@
 import { supabase } from './supabase';
 
+async function compressImage(file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.85): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = height * (maxWidth / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = width * (maxHeight / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to compress image'));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+  });
+}
+
 export async function uploadImage(file: File): Promise<string> {
+  let uploadFile: Blob | File = file;
+
+  if (file.size > 1024 * 1024) {
+    try {
+      console.log('Compressing large image...');
+      uploadFile = await compressImage(file);
+      console.log(`Compressed from ${(file.size / 1024 / 1024).toFixed(2)}MB to ${(uploadFile.size / 1024 / 1024).toFixed(2)}MB`);
+    } catch (err) {
+      console.warn('Compression failed, uploading original:', err);
+      uploadFile = file;
+    }
+  }
+
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
   const filePath = fileName;
 
   const { data, error } = await supabase.storage
     .from('images')
-    .upload(filePath, file, {
+    .upload(filePath, uploadFile, {
       cacheControl: '3600',
-      upsert: false
+      upsert: false,
+      contentType: 'image/jpeg'
     });
 
   if (error) {

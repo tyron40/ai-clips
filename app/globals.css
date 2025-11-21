@@ -1729,3 +1729,29 @@ body {
   font-size: 0.85rem;
   color: #9ca3af;
 }
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.upload-progress {
+  font-size: 0.85rem;
+  color: #d97706;
+  margin-top: 0.5rem;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.file-upload-label.uploading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
