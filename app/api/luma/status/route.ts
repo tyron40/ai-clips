@@ -53,7 +53,14 @@ export async function GET(request: NextRequest) {
     if (!id) {
       return NextResponse.json(
         { error: 'Video ID is required.' },
-        { status: 400 }
+        {
+          status: 400,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          }
+        }
       );
     }
 
@@ -76,7 +83,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       { error: errorMessage },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      }
     );
   }
 }

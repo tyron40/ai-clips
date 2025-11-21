@@ -60,7 +60,14 @@ export async function POST(request: NextRequest) {
     if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
       return NextResponse.json(
         { error: 'Prompt is required and must be a non-empty string.' },
-        { status: 400 }
+        {
+          status: 400,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          }
+        }
       );
     }
 
@@ -86,7 +93,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { error: errorMessage },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      }
     );
   }
 }
