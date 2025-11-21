@@ -12,22 +12,58 @@ interface VideoResultProps {
 export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResultProps) {
   const [copied, setCopied] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioReady, setAudioReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    if (audioUrl && videoRef.current && audioRef.current) {
+    console.log('VideoResult rendered with audioUrl:', audioUrl);
+  }, [audioUrl]);
+
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      const audio = audioRef.current;
+
+      const handleCanPlay = () => {
+        console.log('Audio can play, ready to sync');
+        setAudioReady(true);
+      };
+
+      const handleError = (e: Event) => {
+        console.error('Audio loading error:', e);
+      };
+
+      audio.addEventListener('canplay', handleCanPlay);
+      audio.addEventListener('error', handleError);
+      audio.load();
+
+      return () => {
+        audio.removeEventListener('canplay', handleCanPlay);
+        audio.removeEventListener('error', handleError);
+      };
+    }
+  }, [audioUrl]);
+
+  useEffect(() => {
+    if (audioUrl && audioReady && videoRef.current && audioRef.current) {
       const video = videoRef.current;
       const audio = audioRef.current;
 
-      const handlePlay = () => {
+      const handlePlay = async () => {
+        console.log('Video playing, starting audio');
         if (audio && audioEnabled) {
           audio.currentTime = video.currentTime;
-          audio.play().catch(err => console.error('Audio play error:', err));
+          try {
+            await audio.play();
+            console.log('Audio started successfully');
+          } catch (err) {
+            console.error('Audio play error:', err);
+          }
         }
       };
 
       const handlePause = () => {
+        console.log('Video paused, pausing audio');
         if (audio) {
           audio.pause();
         }
@@ -50,9 +86,9 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
       video.addEventListener('seeked', handleSeeked);
       video.addEventListener('timeupdate', handleTimeUpdate);
 
-      if (video.paused === false && audioEnabled) {
+      if (!video.paused && audioEnabled) {
         audio.currentTime = video.currentTime;
-        audio.play().catch(err => console.error('Audio play error:', err));
+        audio.play().catch(err => console.error('Initial audio play error:', err));
       }
 
       return () => {
@@ -62,7 +98,7 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
         video.removeEventListener('timeupdate', handleTimeUpdate);
       };
     }
-  }, [audioUrl, audioEnabled]);
+  }, [audioUrl, audioEnabled, audioReady]);
 
   const handleShare = async () => {
     try {

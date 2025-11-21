@@ -11,7 +11,10 @@ import MultiImageForm from '@/components/MultiImageForm';
 import HuggingPeopleForm from '@/components/HuggingPeopleForm';
 import ImageMotionForm from '@/components/ImageMotionForm';
 import TalkingCharacterForm from '@/components/TalkingCharacterForm';
+import Navigation from '@/components/Navigation';
+import VideoGalleryView from '@/components/VideoGalleryView';
 import { supabase, VideoRecord } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { History, Plus } from 'lucide-react';
 
 interface VideoState {
@@ -27,8 +30,10 @@ const STORAGE_KEY = 'luma_last_video';
 
 export default function Home() {
   const appName = process.env.NEXT_PUBLIC_APP_NAME || 'AI Video Studio';
+  const { user } = useAuth();
   const [videoState, setVideoState] = useState<VideoState | null>(null);
   const [pollingError, setPollingError] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'home' | 'gallery'>('home');
   const [showGallery, setShowGallery] = useState(false);
   const [generationMode, setGenerationMode] = useState<GenerationMode>('luma');
 
@@ -120,23 +125,26 @@ export default function Home() {
     });
     setPollingError(null);
 
-    try {
-      await supabase.from('videos').insert({
-        luma_id: id,
-        prompt,
-        image_url: imageUrl,
-        duration: duration || '5s',
-        status: 'queued',
-        generation_mode: mode || generationMode,
-        style,
-        transition,
-        images: images ? JSON.stringify(images) : undefined,
-        motion_type: motionType,
-        dialogue,
-        audio_url: audioUrl
-      });
-    } catch (err) {
-      console.error('Failed to save video to database:', err);
+    if (user) {
+      try {
+        await supabase.from('videos').insert({
+          user_id: user.id,
+          luma_id: id,
+          prompt,
+          image_url: imageUrl,
+          duration: duration || '5s',
+          status: 'queued',
+          generation_mode: mode || generationMode,
+          style,
+          transition,
+          images: images ? JSON.stringify(images) : undefined,
+          motion_type: motionType,
+          dialogue,
+          audio_url: audioUrl
+        });
+      } catch (err) {
+        console.error('Failed to save video to database:', err);
+      }
     }
   };
 
@@ -158,131 +166,141 @@ export default function Home() {
   };
 
   return (
-    <div className="container">
-      <header className="header">
-        <div className="header-content">
-          <h1>{appName}</h1>
-          <p className="subtitle">Create stunning videos with AI - Multiple generation modes</p>
-        </div>
-        <div className="header-actions">
-          {!videoState && (
-            <button
-              onClick={() => setShowGallery(!showGallery)}
-              className="gallery-toggle"
-            >
-              {showGallery ? <Plus size={20} /> : <History size={20} />}
-              {showGallery ? 'New Video' : 'Gallery'}
-            </button>
-          )}
-        </div>
-      </header>
+    <div className="app-wrapper">
+      <Navigation onNavigate={setCurrentView} currentView={currentView} />
 
-      <main className="main">
-        {!videoState && !showGallery && (
+      <div className="container">
+        {currentView === 'gallery' && user ? (
+          <VideoGalleryView />
+        ) : (
           <>
-            <GenerationModeSelector
-              selectedMode={generationMode}
-              onSelectMode={setGenerationMode}
-            />
+            <header className="header">
+              <div className="header-content">
+                <h1>{appName}</h1>
+                <p className="subtitle">Create stunning videos with AI - Multiple generation modes</p>
+              </div>
+              <div className="header-actions">
+                {!videoState && (
+                  <button
+                    onClick={() => setShowGallery(!showGallery)}
+                    className="gallery-toggle"
+                  >
+                    {showGallery ? <Plus size={20} /> : <History size={20} />}
+                    {showGallery ? 'New Video' : 'Recent'}
+                  </button>
+                )}
+              </div>
+            </header>
 
-            <div className="form-section">
-              {generationMode === 'luma' && (
-                <PromptForm
-                  onSubmit={(id, prompt, imageUrl, duration, dialogue, audioUrl) =>
-                    handleVideoCreated(id, prompt, imageUrl, duration, 'luma', undefined, undefined, undefined, undefined, dialogue, audioUrl)
-                  }
-                />
+            <main className="main">
+              {!videoState && !showGallery && (
+                <>
+                  <GenerationModeSelector
+                    selectedMode={generationMode}
+                    onSelectMode={setGenerationMode}
+                  />
+
+                  <div className="form-section">
+                    {generationMode === 'luma' && (
+                      <PromptForm
+                        onSubmit={(id, prompt, imageUrl, duration, dialogue, audioUrl) =>
+                          handleVideoCreated(id, prompt, imageUrl, duration, 'luma', undefined, undefined, undefined, undefined, dialogue, audioUrl)
+                        }
+                      />
+                    )}
+
+                    {generationMode === 'huggingface' && (
+                      <HuggingFaceForm
+                        onSubmit={(id, imageUrl, prompt, duration) =>
+                          handleVideoCreated(id, prompt || 'Animate this image', imageUrl, duration, 'huggingface')
+                        }
+                      />
+                    )}
+
+                    {generationMode === 'movie-scene' && (
+                      <MovieSceneForm
+                        onSubmit={(id, prompt, style, characterImages) =>
+                          handleVideoCreated(id, prompt, characterImages?.[0], '10s', 'movie-scene', style, undefined, characterImages)
+                        }
+                      />
+                    )}
+
+                    {generationMode === 'multi-image' && (
+                      <MultiImageForm
+                        onSubmit={(id, images, transition) =>
+                          handleVideoCreated(id, 'Image sequence video', images[0], '10s', 'multi-image', undefined, transition, images)
+                        }
+                      />
+                    )}
+
+                    {generationMode === 'hugging-people' && (
+                      <HuggingPeopleForm
+                        onSubmit={(id, image1Url, image2Url) =>
+                          handleVideoCreated(id, 'Hugging people video', image1Url, '10s', 'hugging-people', undefined, undefined, [image1Url, image2Url])
+                        }
+                      />
+                    )}
+
+                    {generationMode === 'image-motion' && (
+                      <ImageMotionForm
+                        onSubmit={(id, imageUrl, motionType) =>
+                          handleVideoCreated(id, `Image animation with ${motionType} motion`, imageUrl, '10s', 'image-motion', undefined, undefined, undefined, motionType)
+                        }
+                      />
+                    )}
+
+                    {generationMode === 'talking-character' && (
+                      <TalkingCharacterForm
+                        onSubmit={(id, prompt, imageUrl, dialogue, audioUrl) =>
+                          handleVideoCreated(id, prompt, imageUrl, '5s', 'talking-character', undefined, undefined, undefined, undefined, dialogue, audioUrl)
+                        }
+                      />
+                    )}
+                  </div>
+                </>
               )}
 
-              {generationMode === 'huggingface' && (
-                <HuggingFaceForm
-                  onSubmit={(id, imageUrl, prompt, duration) =>
-                    handleVideoCreated(id, prompt || 'Animate this image', imageUrl, duration, 'huggingface')
-                  }
-                />
+              {!videoState && showGallery && <VideoGallery onSelectVideo={handleSelectVideo} />}
+
+              {videoState && videoState.status !== 'completed' && (
+                <div className="progress-area">
+                  <div className="progress-content">
+                    <div className="spinner"></div>
+                    <h3>
+                      {videoState.status === 'queued' ? 'Queued' : 'Processing'}
+                    </h3>
+                    <p>Your video is being generated. This may take a few minutes...</p>
+                    {pollingError && (
+                      <p className="error-text">Error: {pollingError}</p>
+                    )}
+                    <button onClick={handleReset} className="cancel-button">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
 
-              {generationMode === 'movie-scene' && (
-                <MovieSceneForm
-                  onSubmit={(id, prompt, style, characterImages) =>
-                    handleVideoCreated(id, prompt, characterImages?.[0], '10s', 'movie-scene', style, undefined, characterImages)
-                  }
-                />
+              {videoState?.status === 'failed' && (
+                <div className="error-area">
+                  <h3>Generation Failed</h3>
+                  <p>{videoState.error || 'An unknown error occurred'}</p>
+                  <button onClick={handleReset} className="reset-button">
+                    Try Again
+                  </button>
+                </div>
               )}
 
-              {generationMode === 'multi-image' && (
-                <MultiImageForm
-                  onSubmit={(id, images, transition) =>
-                    handleVideoCreated(id, 'Image sequence video', images[0], '10s', 'multi-image', undefined, transition, images)
-                  }
-                />
+              {videoState?.status === 'completed' && videoState.videoUrl && (
+                <VideoResult videoUrl={videoState.videoUrl} audioUrl={videoState.audioUrl} onReset={handleReset} />
               )}
+            </main>
 
-              {generationMode === 'hugging-people' && (
-                <HuggingPeopleForm
-                  onSubmit={(id, image1Url, image2Url) =>
-                    handleVideoCreated(id, 'Hugging people video', image1Url, '10s', 'hugging-people', undefined, undefined, [image1Url, image2Url])
-                  }
-                />
-              )}
-
-              {generationMode === 'image-motion' && (
-                <ImageMotionForm
-                  onSubmit={(id, imageUrl, motionType) =>
-                    handleVideoCreated(id, `Image animation with ${motionType} motion`, imageUrl, '10s', 'image-motion', undefined, undefined, undefined, motionType)
-                  }
-                />
-              )}
-
-              {generationMode === 'talking-character' && (
-                <TalkingCharacterForm
-                  onSubmit={(id, prompt, imageUrl, dialogue, audioUrl) =>
-                    handleVideoCreated(id, prompt, imageUrl, '5s', 'talking-character', undefined, undefined, undefined, undefined, dialogue, audioUrl)
-                  }
-                />
-              )}
-            </div>
+            <footer className="footer">
+              <p>Powered by Luma Dream Machine & Hugging Face</p>
+            </footer>
           </>
         )}
-
-        {!videoState && showGallery && <VideoGallery onSelectVideo={handleSelectVideo} />}
-
-        {videoState && videoState.status !== 'completed' && (
-          <div className="progress-area">
-            <div className="progress-content">
-              <div className="spinner"></div>
-              <h3>
-                {videoState.status === 'queued' ? 'Queued' : 'Processing'}
-              </h3>
-              <p>Your video is being generated. This may take a few minutes...</p>
-              {pollingError && (
-                <p className="error-text">Error: {pollingError}</p>
-              )}
-              <button onClick={handleReset} className="cancel-button">
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {videoState?.status === 'failed' && (
-          <div className="error-area">
-            <h3>Generation Failed</h3>
-            <p>{videoState.error || 'An unknown error occurred'}</p>
-            <button onClick={handleReset} className="reset-button">
-              Try Again
-            </button>
-          </div>
-        )}
-
-        {videoState?.status === 'completed' && videoState.videoUrl && (
-          <VideoResult videoUrl={videoState.videoUrl} audioUrl={videoState.audioUrl} onReset={handleReset} />
-        )}
-      </main>
-
-      <footer className="footer">
-        <p>Powered by Luma Dream Machine & Hugging Face</p>
-      </footer>
+      </div>
     </div>
   );
 }

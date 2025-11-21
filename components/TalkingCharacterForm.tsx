@@ -92,7 +92,9 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
       }
 
       const audioBlob = await speechResponse.blob();
+      console.log('Audio blob received, size:', audioBlob.size, 'type:', audioBlob.type);
       const audioUrl = URL.createObjectURL(audioBlob);
+      console.log('Audio URL created:', audioUrl);
 
       const enhancedPrompt = `Create a realistic talking head video. The person in the image is speaking with natural lip-sync movements and facial expressions. ${voiceStyle} voice style. Natural head movements, realistic eye blinks, and subtle facial animations that match the spoken dialogue. Professional lighting, high quality, natural skin tones. The character maintains eye contact and appears engaged while speaking.`;
 
