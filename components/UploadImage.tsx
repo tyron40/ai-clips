@@ -19,6 +19,8 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('[MOBILE] File selected:', file.name, file.type, file.size);
+
     const validation = validateImageFile(file);
     if (!validation.valid) {
       setError(validation.error || 'Invalid file');
@@ -57,14 +59,23 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
         }, 1500);
       }
 
-      const url = await uploadImage(file);
+      const uploadTimeout = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Upload timeout - please try a smaller image or check your connection')), 60000);
+      });
+
+      const url = await Promise.race([uploadImage(file), uploadTimeout]);
       clearInterval(progressInterval);
       setProgressPercent(100);
       setUploadProgress('Upload complete!');
       onUploadComplete(url);
+
+      e.target.value = '';
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      console.error('[MOBILE] Upload error:', errorMessage);
+      setError(errorMessage);
       setProgressPercent(0);
+      e.target.value = '';
     } finally {
       uploadingRef.current = false;
       setUploading(false);
@@ -80,11 +91,12 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
       <input
         id="image-upload"
         type="file"
-        accept="image/*"
+        accept="image/*,image/heic,image/heif"
         capture="environment"
         onChange={handleFileChange}
         disabled={uploading}
         className="file-input"
+        multiple={false}
       />
       <label htmlFor="image-upload" className={`file-upload-label ${uploading ? 'uploading' : ''}`}>
         {uploading ? <Loader2 size={20} className="spin" /> : <Upload size={20} />}

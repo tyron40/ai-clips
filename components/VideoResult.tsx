@@ -135,7 +135,10 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
         autoPlay
         loop
         muted={!!audioUrl}
+        playsInline
+        preload="metadata"
         className="video-player"
+        style={{ maxWidth: '100%', height: 'auto' }}
       >
         Your browser does not support the video tag.
       </video>
