@@ -217,7 +217,8 @@ export default function MovieSceneForm({ onSubmit }: MovieSceneFormProps) {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            accept="image/*"
+              capture="environment"
             onChange={handleFileSelect}
             disabled={loading || uploading}
             className="file-input"

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'Server misconfigured: LUMA_API_KEY not set.' },
+        { error: 'Luma AI is not configured. Please add your LUMA_API_KEY to the environment variables in Netlify.' },
         { status: 500 }
       );
     }

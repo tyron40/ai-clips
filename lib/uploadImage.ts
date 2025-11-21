@@ -24,13 +24,20 @@ export async function uploadImage(file: File): Promise<string> {
 }
 
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
-  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
   const maxSize = 10 * 1024 * 1024;
 
-  if (!validTypes.includes(file.type)) {
+  if (!file.type.startsWith('image/')) {
     return {
       valid: false,
-      error: 'Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.'
+      error: 'Invalid file type. Please upload an image file.'
+    };
+  }
+
+  if (!validTypes.includes(file.type.toLowerCase()) && !file.type.startsWith('image/')) {
+    return {
+      valid: false,
+      error: 'Invalid file type. Please upload a JPG, PNG, GIF, WebP, or HEIC image.'
     };
   }
 

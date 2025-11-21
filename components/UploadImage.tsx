@@ -40,7 +40,8 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
       <input
         id="image-upload"
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+        accept="image/*"
+        capture="environment"
         onChange={handleFileChange}
         disabled={uploading}
         className="file-input"
