@@ -66,6 +66,13 @@ export async function uploadImage(file: File): Promise<string> {
   console.log(`[UPLOAD START] File: ${file.name}, Type: ${file.type}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
   console.log('[SUPABASE CHECK] Client initialized:', !!supabase);
 
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log('[AUTH CHECK] Session exists:', !!session);
+
+  if (!session) {
+    throw new Error('Please sign in to upload images');
+  }
+
   let uploadFile: Blob | File = file;
   let finalContentType = file.type || 'image/jpeg';
   let fileExt = 'jpg';
@@ -122,6 +129,12 @@ export async function uploadImage(file: File): Promise<string> {
 
   try {
     console.log('[SUPABASE] Starting upload to bucket "images"');
+    console.log('[UPLOAD CONFIG]', {
+      fileName,
+      fileSize: uploadFile.size,
+      contentType: finalContentType,
+      bucketName: 'images'
+    });
 
     const { data, error } = await supabase.storage
       .from('images')
@@ -131,29 +144,50 @@ export async function uploadImage(file: File): Promise<string> {
         contentType: finalContentType
       });
 
-    console.log('[SUPABASE] Upload response:', { data, error });
+    console.log('[SUPABASE] Upload response:', {
+      hasData: !!data,
+      hasError: !!error,
+      errorMessage: error?.message,
+      errorDetails: error
+    });
 
     const uploadTime = Date.now() - uploadStartTime;
     console.log(`[UPLOAD DONE] Completed in ${uploadTime}ms`);
 
     if (error) {
       console.error('[UPLOAD ERROR] Full error:', JSON.stringify(error));
+
+      if (error.message.includes('Invalid API key')) {
+        throw new Error('Storage configuration error. Please check your Supabase setup.');
+      }
+      if (error.message.includes('Bucket not found')) {
+        throw new Error('Storage bucket not found. Please contact support.');
+      }
+      if (error.message.includes('not authenticated')) {
+        throw new Error('Please sign in to upload images.');
+      }
+
       throw new Error(`Upload failed: ${error.message}`);
     }
 
     if (!data) {
       console.error('[UPLOAD ERROR] No data returned from Supabase');
-      throw new Error('Upload failed: No data returned');
+      throw new Error('Upload failed: No data returned from storage');
     }
 
     const { data: { publicUrl } } = supabase.storage
       .from('images')
       .getPublicUrl(fileName);
 
-    console.log('[SUCCESS] URL:', publicUrl);
+    console.log('[SUCCESS] Public URL generated:', publicUrl);
+
+    const verifyResponse = await fetch(publicUrl, { method: 'HEAD' });
+    console.log('[VERIFY] Image accessible:', verifyResponse.ok, verifyResponse.status);
+
     return publicUrl;
   } catch (err) {
     console.error('[FATAL ERROR]', err);
+    console.error('[ERROR STACK]', err instanceof Error ? err.stack : 'No stack trace');
     throw err instanceof Error ? err : new Error('Upload failed');
   }
 }

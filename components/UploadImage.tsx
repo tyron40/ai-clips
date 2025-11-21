@@ -75,8 +75,24 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
     } catch (err) {
       if (progressInterval) clearInterval(progressInterval);
       const errorMessage = err instanceof Error ? err.message : 'Upload failed';
-      console.error('[MOBILE] Upload error:', errorMessage, err);
-      setError(`Upload failed: ${errorMessage}`);
+      console.error('[UPLOAD ERROR] Details:', {
+        message: errorMessage,
+        error: err,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
+      let userFriendlyMessage = errorMessage;
+      if (errorMessage.includes('sign in')) {
+        userFriendlyMessage = 'Please sign in to upload images';
+      } else if (errorMessage.includes('network')) {
+        userFriendlyMessage = 'Network error. Check your connection and try again.';
+      } else if (errorMessage.includes('timeout')) {
+        userFriendlyMessage = 'Upload timed out. Try a smaller image or check your connection.';
+      }
+
+      setError(userFriendlyMessage);
       setProgressPercent(0);
       e.target.value = '';
     } finally {
