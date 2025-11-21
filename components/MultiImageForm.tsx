@@ -150,12 +150,12 @@ export default function MultiImageForm({ onSubmit }: MultiImageFormProps) {
                   <input
                     ref={el => fileInputRefs.current[index] = el}
                     type="file"
-                    accept="image/*"
-              capture="environment"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                     onChange={(e) => handleFileSelect(index, e)}
                     disabled={loading || image.uploading}
                     className="file-input"
                     id={`multi-image-${index}`}
+                    style={{ display: 'none' }}
                   />
                   <label htmlFor={`multi-image-${index}`} className="file-upload-label-small">
                     <Upload size={16} />

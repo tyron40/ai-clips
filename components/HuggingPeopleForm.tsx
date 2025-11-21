@@ -107,12 +107,12 @@ export default function HuggingPeopleForm({ onSubmit }: HuggingPeopleFormProps) 
           <input
             ref={ref}
             type="file"
-            accept="image/*"
-              capture="environment"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
             onChange={(e) => handleFileSelect(imageNum, e)}
             disabled={loading || imageState.uploading}
             className="file-input"
             id={`hugging-person-${imageNum}`}
+            style={{ display: 'none' }}
           />
           <label htmlFor={`hugging-person-${imageNum}`} className="file-upload-label">
             <Upload size={20} />

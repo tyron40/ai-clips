@@ -14,6 +14,7 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
   const [uploadProgress, setUploadProgress] = useState<string>('');
   const [progressPercent, setProgressPercent] = useState<number>(0);
   const uploadingRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,18 +90,17 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
   };
 
   const handleButtonClick = () => {
-    const input = document.getElementById('image-upload') as HTMLInputElement;
-    if (input) {
-      input.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
   return (
     <div className="upload-image">
       <input
-        id="image-upload"
+        ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
         onChange={handleFileChange}
         disabled={uploading}
         className="file-input"

@@ -153,12 +153,12 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
-              capture="environment"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                 onChange={handleFileSelect}
                 disabled={loading || uploading}
                 className="file-input"
                 id="character-image-upload"
+                style={{ display: 'none' }}
               />
               <label htmlFor="character-image-upload" className="file-upload-label">
                 <Upload size={20} />

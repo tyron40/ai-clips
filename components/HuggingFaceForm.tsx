@@ -112,12 +112,12 @@ export default function HuggingFaceForm({ onSubmit }: HuggingFaceFormProps) {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
               onChange={handleFileSelect}
               disabled={loading || uploading}
               className="file-input"
               id="hf-file-upload"
+              style={{ display: 'none' }}
             />
             <label htmlFor="hf-file-upload" className="file-upload-label">
               <Upload size={20} />
