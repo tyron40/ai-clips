@@ -17,29 +17,49 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
 
   useEffect(() => {
     if (audioUrl && videoRef.current && audioRef.current) {
-      const syncAudio = () => {
-        if (audioRef.current && videoRef.current) {
-          audioRef.current.currentTime = videoRef.current.currentTime;
+      const video = videoRef.current;
+      const audio = audioRef.current;
+
+      const handlePlay = () => {
+        if (audio && audioEnabled) {
+          audio.currentTime = video.currentTime;
+          audio.play().catch(err => console.error('Audio play error:', err));
         }
       };
 
-      const video = videoRef.current;
-      video.addEventListener('play', () => {
-        if (audioRef.current && audioEnabled) {
-          audioRef.current.play();
+      const handlePause = () => {
+        if (audio) {
+          audio.pause();
         }
-      });
-      video.addEventListener('pause', () => {
-        if (audioRef.current) {
-          audioRef.current.pause();
+      };
+
+      const handleSeeked = () => {
+        if (audio && video) {
+          audio.currentTime = video.currentTime;
         }
-      });
-      video.addEventListener('seeked', syncAudio);
+      };
+
+      const handleTimeUpdate = () => {
+        if (audio && video && Math.abs(audio.currentTime - video.currentTime) > 0.3) {
+          audio.currentTime = video.currentTime;
+        }
+      };
+
+      video.addEventListener('play', handlePlay);
+      video.addEventListener('pause', handlePause);
+      video.addEventListener('seeked', handleSeeked);
+      video.addEventListener('timeupdate', handleTimeUpdate);
+
+      if (video.paused === false && audioEnabled) {
+        audio.currentTime = video.currentTime;
+        audio.play().catch(err => console.error('Audio play error:', err));
+      }
 
       return () => {
-        video.removeEventListener('play', () => {});
-        video.removeEventListener('pause', () => {});
-        video.removeEventListener('seeked', syncAudio);
+        video.removeEventListener('play', handlePlay);
+        video.removeEventListener('pause', handlePause);
+        video.removeEventListener('seeked', handleSeeked);
+        video.removeEventListener('timeupdate', handleTimeUpdate);
       };
     }
   }, [audioUrl, audioEnabled]);
@@ -78,13 +98,14 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
         controls
         autoPlay
         loop
+        muted={!!audioUrl}
         className="video-player"
       >
         Your browser does not support the video tag.
       </video>
 
       {audioUrl && (
-        <audio ref={audioRef} src={audioUrl} loop />
+        <audio ref={audioRef} src={audioUrl} loop preload="auto" />
       )}
 
       <div className="video-actions">
