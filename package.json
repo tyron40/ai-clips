@@ -71,6 +71,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@netlify/functions": "^5.1.0",
     "@netlify/plugin-nextjs": "^5.7.2"
   }
 }

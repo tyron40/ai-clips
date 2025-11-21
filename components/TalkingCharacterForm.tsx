@@ -67,17 +67,9 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
         throw new Error('Please enter dialogue for the character to say');
       }
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Supabase configuration missing');
-      }
-
-      const speechResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speech`, {
+      const speechResponse = await fetch('/.netlify/functions/generate-speech', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${supabaseAnonKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

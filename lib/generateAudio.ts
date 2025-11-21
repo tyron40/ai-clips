@@ -6,19 +6,10 @@ export async function generateAudioFromText(
     return null;
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase configuration missing');
-    return null;
-  }
-
   try {
-    const speechResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speech`, {
+    const speechResponse = await fetch('/.netlify/functions/generate-speech', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${supabaseAnonKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
