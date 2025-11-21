@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { uploadImage, validateImageFile } from '@/lib/uploadImage';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { Upload, X, Loader as Loader2 } from 'lucide-react';
 
 interface UploadImageProps {
   onUploadComplete: (url: string) => void;
