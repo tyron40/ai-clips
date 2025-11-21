@@ -88,6 +88,13 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
     }
   };
 
+  const handleButtonClick = () => {
+    const input = document.getElementById('image-upload') as HTMLInputElement;
+    if (input) {
+      input.click();
+    }
+  };
+
   return (
     <div className="upload-image">
       <input
@@ -97,11 +104,17 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
         onChange={handleFileChange}
         disabled={uploading}
         className="file-input"
+        style={{ display: 'none' }}
       />
-      <label htmlFor="image-upload" className={`file-upload-label ${uploading ? 'uploading' : ''}`}>
+      <button
+        type="button"
+        onClick={handleButtonClick}
+        disabled={uploading}
+        className={`file-upload-label ${uploading ? 'uploading' : ''}`}
+      >
         {uploading ? <Loader2 size={20} className="spin" /> : <Upload size={20} />}
-        {uploading ? 'Uploading...' : 'Upload Image'}
-      </label>
+        {uploading ? 'Uploading...' : 'Choose from Photos'}
+      </button>
       {uploadProgress && (
         <div className="upload-progress-container">
           <p className="upload-progress">{uploadProgress}</p>

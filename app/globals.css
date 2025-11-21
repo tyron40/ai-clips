@@ -921,6 +921,7 @@ body {
 .file-upload-label {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
@@ -930,11 +931,23 @@ body {
   cursor: pointer;
   transition: all 0.3s;
   border: none;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 100%;
+  max-width: 300px;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
 }
 
-.file-upload-label:hover {
+.file-upload-label:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(217, 119, 6, 0.3);
+}
+
+.file-upload-label:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .file-upload-label-small {
