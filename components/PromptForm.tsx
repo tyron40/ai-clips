@@ -50,6 +50,11 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
         }),
       });
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid response from server. Please check your configuration.');
+      }
+
       const data = await response.json();
 
       if (!response.ok) {

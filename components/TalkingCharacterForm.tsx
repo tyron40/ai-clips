@@ -79,8 +79,21 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
       });
 
       if (!speechResponse.ok) {
-        const errorData = await speechResponse.json();
-        throw new Error(errorData.error || 'Failed to generate speech audio');
+        const contentType = speechResponse.headers.get('content-type');
+        let errorMessage = 'Failed to generate speech audio';
+
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await speechResponse.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = `Speech generation failed (${speechResponse.status})`;
+          }
+        } else {
+          errorMessage = 'Speech generation service unavailable. Make sure OPENAI_API_KEY is set in Netlify environment variables.';
+        }
+
+        throw new Error(errorMessage);
       }
 
       const audioBlob = await speechResponse.blob();

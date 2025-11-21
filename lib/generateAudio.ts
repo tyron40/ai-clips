@@ -19,7 +19,12 @@ export async function generateAudioFromText(
     });
 
     if (!speechResponse.ok) {
-      console.error('Failed to generate speech audio');
+      const contentType = speechResponse.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        console.error('Speech generation service unavailable (Netlify function not deployed or running locally)');
+      } else {
+        console.error('Failed to generate speech audio');
+      }
       return null;
     }
 

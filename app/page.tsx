@@ -59,6 +59,12 @@ export default function Home() {
     const pollStatus = async () => {
       try {
         const response = await fetch(`/api/luma/status?id=${videoState.id}`);
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Invalid response from server');
+        }
+
         const data = await response.json();
 
         if (!response.ok) {
