@@ -54,6 +54,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('[LUMA API] API Key check:', {
+      hasKey: !!apiKey,
+      keyLength: apiKey.length,
+      keyPrefix: apiKey.substring(0, 10) + '...',
+      keySuffix: '...' + apiKey.substring(apiKey.length - 10)
+    });
+
     const body = await request.json();
     const { prompt, imageUrl, duration, endImageUrl } = body;
 

@@ -74,17 +74,37 @@ export async function createLumaVideo(
     body.duration = duration;
   }
 
+  console.log('[LUMA CREATE] Request details:', {
+    url: 'https://api.lumalabs.ai/dream-machine/v1/generations',
+    hasApiKey: !!apiKey,
+    apiKeyLength: apiKey.length,
+    prompt: prompt.substring(0, 50) + '...',
+    hasImage: !!imageUrl,
+    duration
+  });
+
   const response = await fetch('https://api.lumalabs.ai/dream-machine/v1/generations', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${apiKey.trim()}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
   });
 
+  console.log('[LUMA CREATE] Response status:', response.status, response.statusText);
+
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('[LUMA CREATE] Error response:', errorText);
+
+    if (response.status === 403) {
+      throw new Error('Luma API authentication failed. Please check your API key is valid and has the correct permissions.');
+    }
+    if (response.status === 401) {
+      throw new Error('Luma API key is invalid or expired. Please update your LUMA_API_KEY.');
+    }
+
     throw new Error(`Luma API error (${response.status}): ${errorText}`);
   }
 
