@@ -13,6 +13,7 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
   const [progressPercent, setProgressPercent] = useState<number>(0);
+  const [preview, setPreview] = useState<string | null>(null);
   const uploadingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,13 +29,22 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
       return;
     }
 
+    const previewUrl = URL.createObjectURL(file);
+    setPreview(previewUrl);
+
     setUploading(true);
     uploadingRef.current = true;
     setError(null);
     setProgressPercent(0);
 
     const fileSize = (file.size / 1024 / 1024).toFixed(2);
-    setUploadProgress(`Processing ${fileSize}MB image...`);
+    const fileSizeKB = (file.size / 1024).toFixed(0);
+
+    if (file.size < 300 * 1024) {
+      setUploadProgress('Uploading image...');
+    } else {
+      setUploadProgress(`Optimizing ${fileSizeKB}KB image...`);
+    }
 
     let progressInterval: NodeJS.Timeout | null = null;
 
@@ -42,24 +52,18 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
       progressInterval = setInterval(() => {
         if (uploadingRef.current) {
           setProgressPercent((prev) => {
-            if (prev < 90) return prev + 10;
+            if (prev < 85) return prev + 15;
             return prev;
           });
         }
-      }, 300);
+      }, 200);
 
-      if (file.size > 500 * 1024) {
+      if (file.size > 300 * 1024) {
         setTimeout(() => {
           if (uploadingRef.current) {
-            setUploadProgress('Optimizing for faster upload...');
+            setUploadProgress('Compressing and uploading...');
           }
-        }, 500);
-
-        setTimeout(() => {
-          if (uploadingRef.current) {
-            setUploadProgress('Uploading to server...');
-          }
-        }, 1500);
+        }, 400);
       }
 
       console.log('[UPLOAD] Starting upload process...');
@@ -67,9 +71,18 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
 
       if (progressInterval) clearInterval(progressInterval);
       setProgressPercent(100);
-      setUploadProgress('Upload complete!');
+      setUploadProgress('✓ Image ready!');
       console.log('[UPLOAD] Success! URL:', url);
       onUploadComplete(url);
+
+      setTimeout(() => {
+        setUploadProgress('');
+        setProgressPercent(0);
+        if (preview) {
+          URL.revokeObjectURL(preview);
+          setPreview(null);
+        }
+      }, 1500);
 
       e.target.value = '';
     } catch (err) {
@@ -94,14 +107,14 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
 
       setError(userFriendlyMessage);
       setProgressPercent(0);
+      if (preview) {
+        URL.revokeObjectURL(preview);
+        setPreview(null);
+      }
       e.target.value = '';
     } finally {
       uploadingRef.current = false;
       setUploading(false);
-      setTimeout(() => {
-        setUploadProgress('');
-        setProgressPercent(0);
-      }, 2000);
     }
   };
 
@@ -113,6 +126,22 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
 
   return (
     <div className="upload-image">
+      {preview && (
+        <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img
+            src={preview}
+            alt="Preview"
+            style={{
+              width: '60px',
+              height: '60px',
+              objectFit: 'cover',
+              borderRadius: '8px',
+              border: '2px solid #10b981'
+            }}
+          />
+          <span style={{ fontSize: '0.9em', color: '#10b981' }}>✓ Ready to upload</span>
+        </div>
+      )}
       <input
         ref={fileInputRef}
         type="file"

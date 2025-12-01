@@ -2,63 +2,67 @@ import { supabase } from './supabase';
 
 async function compressImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (e) => {
-      const img = new Image();
-      img.src = e.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
 
-        const maxDimension = 1280;
-        let quality = 0.8;
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
 
-        if (file.size > 5 * 1024 * 1024) {
-          quality = 0.7;
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      const maxDimension = 1920;
+      let quality = 0.85;
+
+      if (file.size > 5 * 1024 * 1024) {
+        quality = 0.75;
+        const ratio = maxDimension / Math.max(width, height);
+        if (ratio < 1) {
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
         }
+      } else if (file.size > 2 * 1024 * 1024) {
+        quality = 0.8;
+        if (Math.max(width, height) > maxDimension) {
+          const ratio = maxDimension / Math.max(width, height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+      }
 
-        if (width > height) {
-          if (width > maxDimension) {
-            height = Math.round(height * (maxDimension / width));
-            width = maxDimension;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { alpha: false });
+
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to compress image'));
           }
-        } else {
-          if (height > maxDimension) {
-            width = Math.round(width * (maxDimension / height));
-            height = maxDimension;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'));
-          return;
-        }
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error('Failed to compress image'));
-            }
-          },
-          'image/jpeg',
-          quality
-        );
-      };
-      img.onerror = () => reject(new Error('Failed to load image'));
+        },
+        'image/jpeg',
+        quality
+      );
     };
-    reader.onerror = () => reject(new Error('Failed to read file'));
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load image'));
+    };
+
+    img.src = objectUrl;
   });
 }
 
@@ -93,33 +97,36 @@ export async function uploadImage(file: File): Promise<string> {
     finalContentType = 'image/webp';
   }
 
-  const shouldCompress = file.size > 500 * 1024 &&
+  const shouldCompress = file.size > 300 * 1024 &&
     (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png' || file.type === 'image/webp');
 
   if (shouldCompress) {
     try {
-      console.log('[COMPRESSION START]');
+      console.log('[COMPRESSION START] Optimizing image...');
 
       const compressionPromise = compressImage(file);
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
-          console.error('[COMPRESSION TIMEOUT] - Taking too long');
+          console.error('[COMPRESSION TIMEOUT] Using original file');
           reject(new Error('Compression timeout'));
-        }, 15000);
+        }, 8000);
       });
 
       uploadFile = await Promise.race([compressionPromise, timeoutPromise]);
       const compressionTime = Date.now() - startTime;
-      console.log(`[COMPRESSION DONE] ${(file.size / 1024).toFixed(0)}KB -> ${(uploadFile.size / 1024).toFixed(0)}KB in ${compressionTime}ms`);
+      const originalKB = (file.size / 1024).toFixed(0);
+      const compressedKB = (uploadFile.size / 1024).toFixed(0);
+      const savings = ((1 - uploadFile.size / file.size) * 100).toFixed(0);
+      console.log(`[COMPRESSION SUCCESS] ${originalKB}KB → ${compressedKB}KB (${savings}% smaller) in ${compressionTime}ms`);
       fileExt = 'jpg';
       finalContentType = 'image/jpeg';
     } catch (err) {
-      console.error('[COMPRESSION FAILED]', err);
-      console.log('[FALLBACK] Using original file');
+      console.warn('[COMPRESSION SKIPPED]', err instanceof Error ? err.message : 'Unknown error');
+      console.log('[USING ORIGINAL] Uploading without compression');
       uploadFile = file;
     }
   } else {
-    console.log('[SKIP COMPRESSION] File is small enough or unsupported type');
+    console.log('[NO COMPRESSION] File is already optimized or unsupported format');
   }
 
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -139,7 +146,7 @@ export async function uploadImage(file: File): Promise<string> {
     const { data, error } = await supabase.storage
       .from('images')
       .upload(fileName, uploadFile, {
-        cacheControl: '3600',
+        cacheControl: '31536000',
         upsert: false,
         contentType: finalContentType
       });
@@ -181,8 +188,7 @@ export async function uploadImage(file: File): Promise<string> {
 
     console.log('[SUCCESS] Public URL generated:', publicUrl);
 
-    const verifyResponse = await fetch(publicUrl, { method: 'HEAD' });
-    console.log('[VERIFY] Image accessible:', verifyResponse.ok, verifyResponse.status);
+    console.log('[SUCCESS] Upload complete, image ready at:', publicUrl);
 
     return publicUrl;
   } catch (err) {
