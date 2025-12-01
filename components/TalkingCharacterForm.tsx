@@ -3,6 +3,7 @@
 import { useState, FormEvent, ChangeEvent, useRef } from 'react';
 import { MessageSquare, Upload, User, Volume2 } from 'lucide-react';
 import { uploadImage, validateImageFile } from '@/lib/uploadImage';
+import { enhanceForTalkingCharacter } from '@/lib/promptEnhancer';
 
 interface TalkingCharacterFormProps {
   onSubmit: (jobId: string, prompt: string, imageUrl: string, dialogue: string, audioUrl: string, voiceStyle: string) => void;
@@ -101,7 +102,8 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
       const audioUrl = URL.createObjectURL(audioBlob);
       console.log('Audio URL created:', audioUrl);
 
-      const enhancedPrompt = `Create a realistic talking head video. The person in the image is speaking with natural lip-sync movements and facial expressions. ${voiceStyle} voice style. Natural head movements, realistic eye blinks, and subtle facial animations that match the spoken dialogue. Professional lighting, high quality, natural skin tones. The character maintains eye contact and appears engaged while speaking.`;
+      const basePrompt = `The character speaks naturally with authentic emotion and engagement`;
+      const enhancedPrompt = enhanceForTalkingCharacter(basePrompt, true);
 
       const response = await fetch('/api/luma/create', {
         method: 'POST',

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { Volume2, Sparkles } from 'lucide-react';
+import { Volume2, Sparkles, Wand2 } from 'lucide-react';
 import UploadImage from './UploadImage';
 import PromptTemplates from './PromptTemplates';
 import { generateAudioFromText } from '@/lib/generateAudio';
+import { enhancePromptWithImage, validatePrompt, optimizeForCharacterAnimation } from '@/lib/promptEnhancer';
 
 interface PromptFormProps {
   onSubmit: (videoId: string, prompt: string, imageUrl?: string, duration?: string, dialogue?: string, audioUrl?: string, voiceStyle?: string) => void;
@@ -19,12 +20,14 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
   const [showAudioOptions, setShowAudioOptions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoEnhance, setAutoEnhance] = useState(true);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!prompt.trim()) {
-      setError('Please enter a prompt');
+    const validation = validatePrompt(prompt);
+    if (!validation.valid) {
+      setError(validation.error || 'Invalid prompt');
       return;
     }
 
@@ -38,6 +41,13 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
         audioUrl = await generateAudioFromText(dialogue, voiceStyle);
       }
 
+      let finalPrompt = prompt.trim();
+      if (autoEnhance && imageUrl.trim()) {
+        finalPrompt = enhancePromptWithImage(finalPrompt, true);
+        finalPrompt = optimizeForCharacterAnimation(finalPrompt, 'moderate');
+        console.log('[PROMPT ENHANCED]', { original: prompt, enhanced: finalPrompt });
+      }
+
       const response = await fetch('/api/luma/create', {
         method: 'POST',
         headers: {
@@ -46,7 +56,7 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
         },
         cache: 'no-store',
         body: JSON.stringify({
-          prompt: prompt.trim(),
+          prompt: finalPrompt,
           imageUrl: imageUrl.trim() || undefined,
           duration,
         }),
@@ -90,20 +100,53 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
 
       <form onSubmit={handleSubmit} className="prompt-form">
         <div className="form-group">
-        <label htmlFor="prompt">Video Prompt *</label>
+        <label htmlFor="prompt">
+          Video Prompt *
+          {imageUrl && (
+            <span style={{ marginLeft: '8px', fontSize: '0.9em', color: '#10b981' }}>
+              <Wand2 size={14} style={{ display: 'inline', marginRight: '4px' }} />
+              Character Mode Active
+            </span>
+          )}
+        </label>
         <textarea
           id="prompt"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe the video you want to create..."
+          placeholder={imageUrl ? "Describe what the character should do (e.g., 'walking confidently', 'looking at camera with a smile')..." : "Describe the video you want to create..."}
           rows={4}
           disabled={loading}
           required
         />
+        {imageUrl && autoEnhance && (
+          <p className="input-hint" style={{ color: '#10b981', marginTop: '8px' }}>
+            ✨ Auto-Enhancement Active: Your prompt will be optimized to animate the character naturally
+          </p>
+        )}
       </div>
 
+      {imageUrl && (
+        <div className="form-group">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="checkbox"
+              id="autoEnhance"
+              checked={autoEnhance}
+              onChange={(e) => setAutoEnhance(e.target.checked)}
+              disabled={loading}
+              style={{ width: 'auto', margin: 0 }}
+            />
+            <Wand2 size={16} />
+            Smart Character Animation Enhancement
+          </label>
+          <p className="input-hint">
+            Automatically optimizes your prompt to ensure the character is animated naturally as the main focus
+          </p>
+        </div>
+      )}
+
       <div className="form-group">
-        <label htmlFor="imageUrl">Image URL (Optional)</label>
+        <label htmlFor="imageUrl">Character Image (Optional)</label>
         <input
           id="imageUrl"
           type="text"
@@ -218,7 +261,11 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
       </button>
 
       <p className="pro-tip">
-        Pro tip: If you don't have an image URL, try text-only first.
+        {imageUrl ? (
+          <>🎭 <strong>Character Mode:</strong> Your image will be animated as the main character. The AI will maintain their appearance throughout the video.</>
+        ) : (
+          <>💡 <strong>Pro tip:</strong> Upload a character image to create videos featuring that specific person!</>
+        )}
       </p>
       </form>
     </>
