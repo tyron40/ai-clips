@@ -13,29 +13,29 @@ interface Template {
 const templates: Template[] = [
   {
     id: '1',
-    title: 'Walking Action',
-    prompt: 'walking confidently through a city street',
-    icon: Film,
-    category: 'Character'
-  },
-  {
-    id: '2',
-    title: 'Look at Camera',
-    prompt: 'turning to look directly at the camera with a smile',
+    title: 'Confident Smile',
+    prompt: 'smiling confidently at the camera',
     icon: Camera,
     category: 'Character'
   },
   {
+    id: '2',
+    title: 'Wave Hello',
+    prompt: 'waving hello to the camera',
+    icon: Film,
+    category: 'Character'
+  },
+  {
     id: '3',
-    title: 'Slow Motion',
-    prompt: 'running in cinematic slow motion',
+    title: 'Happy Expression',
+    prompt: 'laughing joyfully while looking at the camera',
     icon: Sparkles,
     category: 'Character'
   },
   {
     id: '4',
-    title: 'Dance Move',
-    prompt: 'dancing energetically with smooth movements',
+    title: 'Subtle Nod',
+    prompt: 'nodding gently while maintaining eye contact',
     icon: Wand2,
     category: 'Character'
   },

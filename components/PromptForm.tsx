@@ -120,12 +120,12 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
         />
         {imageUrl && autoEnhance && (
           <p className="input-hint" style={{ color: '#10b981', marginTop: '8px' }}>
-            ✨ <strong>Character Animation Enabled:</strong> The person in your uploaded image will be animated as the main character performing your described action
+            ✨ <strong>Character Animation Enabled:</strong> The person in your uploaded image will be animated as the main character performing your action. <strong>STRICT RULE: Character will remain facing forward toward the camera throughout the video.</strong>
           </p>
         )}
         {imageUrl && !autoEnhance && (
           <p className="input-hint" style={{ color: '#f59e0b', marginTop: '8px' }}>
-            ⚠️ Auto-enhancement is OFF. Your image will be used as a starting frame, but character animation may not work as expected.
+            ⚠️ Auto-enhancement is OFF. Your image will be used as a starting frame, but character animation and forward-facing orientation may not work as expected.
           </p>
         )}
       </div>
@@ -145,7 +145,7 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
             Smart Character Animation Enhancement
           </label>
           <p className="input-hint">
-            When enabled, automatically adds "The person in the starting image" to ensure your uploaded character is the main focus and gets animated
+            When enabled, automatically adds "The person in the starting image" and enforces forward-facing orientation to ensure your uploaded character is the main focus and remains facing the camera
           </p>
         </div>
       )}
@@ -267,9 +267,9 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
 
       <p className="pro-tip">
         {imageUrl ? (
-          <>🎭 <strong>Character Mode Active:</strong> Your uploaded image will be used as the starting frame. The person in your image will be animated performing the action you describe. Keep prompts action-focused (e.g., "walking", "smiling", "dancing").</>
+          <>🎭 <strong>Character Mode Active:</strong> Your uploaded image will be used as the starting frame. The person in your image will be animated performing the action you describe while <strong>always facing forward toward the camera</strong>. Keep prompts action-focused (e.g., "walking", "smiling", "dancing", "waving").</>
         ) : (
-          <>💡 <strong>Pro tip:</strong> Upload a self-portrait or character image, then describe what action you want them to perform!</>
+          <>💡 <strong>Pro tip:</strong> Upload a self-portrait facing the camera, then describe what action you want to perform!</>
         )}
       </p>
       </form>

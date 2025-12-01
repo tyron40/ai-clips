@@ -7,38 +7,55 @@ export function enhancePromptWithImage(userPrompt: string, hasImage: boolean): s
   const lowerPrompt = prompt.toLowerCase();
 
   const starterInstruction = 'The person in the starting image';
+  const facingRule = 'The person remains facing forward toward the camera, maintaining direct frontal view and eye contact with the viewer throughout the entire video.';
+  const appearanceRule = 'The person maintains their exact facial features, appearance, and identity from the starting image with no changes to their face or body.';
+
+  let basePrompt = '';
 
   if (lowerPrompt.includes('the person') ||
       lowerPrompt.includes('the character') ||
       lowerPrompt.includes('they are') ||
       lowerPrompt.includes('he is') ||
       lowerPrompt.includes('she is')) {
-    return `${starterInstruction} ${prompt}`;
+    basePrompt = `${starterInstruction} ${prompt}`;
+  } else {
+    const characterKeywords = [
+      'person', 'character', 'subject', 'figure', 'individual',
+      'man', 'woman', 'they', 'them', 'their', 'he', 'she', 'his', 'her'
+    ];
+
+    const hasCharacterReference = characterKeywords.some(keyword =>
+      lowerPrompt.includes(keyword)
+    );
+
+    if (hasCharacterReference) {
+      let enhanced = prompt
+        .replace(/\b(a person|the person|person)\b/gi, 'the person from the image')
+        .replace(/\b(a character|the character|character)\b/gi, 'the person from the image')
+        .replace(/\b(a man|the man|man)\b/gi, 'the person from the image')
+        .replace(/\b(a woman|the woman|woman)\b/gi, 'the person from the image')
+        .replace(/\b(he|she)\b/gi, 'the person from the image')
+        .replace(/\b(they|them)\b/gi, 'the person from the image')
+        .replace(/\b(their|his|her)\b/gi, 'their');
+
+      basePrompt = `${starterInstruction} ${enhanced}`;
+    } else {
+      basePrompt = `${starterInstruction} is ${prompt}`;
+    }
   }
 
-  const characterKeywords = [
-    'person', 'character', 'subject', 'figure', 'individual',
-    'man', 'woman', 'they', 'them', 'their', 'he', 'she', 'his', 'her'
-  ];
+  const hasTurningAction = lowerPrompt.includes('turn') ||
+                           lowerPrompt.includes('look away') ||
+                           lowerPrompt.includes('look back') ||
+                           lowerPrompt.includes('profile') ||
+                           lowerPrompt.includes('look around') ||
+                           lowerPrompt.includes('side view');
 
-  const hasCharacterReference = characterKeywords.some(keyword =>
-    lowerPrompt.includes(keyword)
-  );
-
-  if (hasCharacterReference) {
-    let enhanced = prompt
-      .replace(/\b(a person|the person|person)\b/gi, 'the person from the image')
-      .replace(/\b(a character|the character|character)\b/gi, 'the person from the image')
-      .replace(/\b(a man|the man|man)\b/gi, 'the person from the image')
-      .replace(/\b(a woman|the woman|woman)\b/gi, 'the person from the image')
-      .replace(/\b(he|she)\b/gi, 'the person from the image')
-      .replace(/\b(they|them)\b/gi, 'the person from the image')
-      .replace(/\b(their|his|her)\b/gi, 'their');
-
-    return `${starterInstruction} ${enhanced}`;
+  if (hasTurningAction) {
+    return `${basePrompt}. STRICT RULE: ${facingRule} ${appearanceRule}`;
   }
 
-  return `${starterInstruction} is ${prompt}`;
+  return `${basePrompt}, always facing forward toward the camera with direct frontal view. ${facingRule} ${appearanceRule}`;
 }
 
 export function optimizeForCharacterAnimation(
@@ -48,9 +65,9 @@ export function optimizeForCharacterAnimation(
   const prompt = userPrompt.trim();
 
   const motionDescriptors = {
-    subtle: 'Smooth natural motion, realistic movement, subtle expressions',
-    moderate: 'Natural dynamic movement, engaged and active, smooth transitions',
-    dynamic: 'Expressive energetic motion, dramatic movement, high energy'
+    subtle: 'Smooth natural motion with subtle expressions, keeping frontal orientation',
+    moderate: 'Natural dynamic movement while maintaining forward-facing position, engaged and active',
+    dynamic: 'Expressive energetic motion, dramatic movement with frontal camera presence, high energy'
   };
 
   const descriptor = motionDescriptors[animationType];
@@ -58,10 +75,10 @@ export function optimizeForCharacterAnimation(
   if (prompt.toLowerCase().includes('movement') ||
       prompt.toLowerCase().includes('motion') ||
       prompt.toLowerCase().includes('smooth')) {
-    return `${prompt}. Cinematic camera work, professional quality`;
+    return `${prompt}. Keep character facing camera. Cinematic camera work, professional quality`;
   }
 
-  return `${prompt}. ${descriptor}. Cinematic camera work, professional quality`;
+  return `${prompt}. ${descriptor}. Keep character facing camera throughout. Cinematic camera work, professional quality`;
 }
 
 export function enhanceForMovieScene(
