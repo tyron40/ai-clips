@@ -13,45 +13,45 @@ interface Template {
 const templates: Template[] = [
   {
     id: '1',
-    title: 'Cinematic Landscape',
+    title: 'Walking Action',
+    prompt: 'walking confidently through a city street',
+    icon: Film,
+    category: 'Character'
+  },
+  {
+    id: '2',
+    title: 'Look at Camera',
+    prompt: 'turning to look directly at the camera with a smile',
+    icon: Camera,
+    category: 'Character'
+  },
+  {
+    id: '3',
+    title: 'Slow Motion',
+    prompt: 'running in cinematic slow motion',
+    icon: Sparkles,
+    category: 'Character'
+  },
+  {
+    id: '4',
+    title: 'Dance Move',
+    prompt: 'dancing energetically with smooth movements',
+    icon: Wand2,
+    category: 'Character'
+  },
+  {
+    id: '5',
+    title: 'Landscape Scene',
     prompt: 'A breathtaking mountain landscape at golden hour with dramatic clouds rolling over peaks',
     icon: Camera,
     category: 'Nature'
   },
   {
-    id: '2',
-    title: 'Urban Motion',
-    prompt: 'A bustling city street with people walking and cars moving through the intersection',
-    icon: Film,
-    category: 'Urban'
-  },
-  {
-    id: '3',
-    title: 'Floating Objects',
-    prompt: 'Colorful balloons floating gently upward against a clear blue sky',
-    icon: Sparkles,
-    category: 'Abstract'
-  },
-  {
-    id: '4',
+    id: '6',
     title: 'Ocean Waves',
     prompt: 'Ocean waves crashing on a sandy beach with foam and spray',
     icon: Camera,
     category: 'Nature'
-  },
-  {
-    id: '5',
-    title: 'Magical Forest',
-    prompt: 'A mystical forest with sunbeams filtering through trees and particles floating in the air',
-    icon: Wand2,
-    category: 'Fantasy'
-  },
-  {
-    id: '6',
-    title: 'Product Showcase',
-    prompt: 'A sleek modern product rotating slowly on a minimalist white background',
-    icon: Film,
-    category: 'Commercial'
   }
 ];
 

@@ -6,9 +6,19 @@ export function enhancePromptWithImage(userPrompt: string, hasImage: boolean): s
   const prompt = userPrompt.trim();
   const lowerPrompt = prompt.toLowerCase();
 
+  const starterInstruction = 'The person in the starting image';
+
+  if (lowerPrompt.includes('the person') ||
+      lowerPrompt.includes('the character') ||
+      lowerPrompt.includes('they are') ||
+      lowerPrompt.includes('he is') ||
+      lowerPrompt.includes('she is')) {
+    return `${starterInstruction} ${prompt}`;
+  }
+
   const characterKeywords = [
     'person', 'character', 'subject', 'figure', 'individual',
-    'man', 'woman', 'they', 'them', 'their'
+    'man', 'woman', 'they', 'them', 'their', 'he', 'she', 'his', 'her'
   ];
 
   const hasCharacterReference = characterKeywords.some(keyword =>
@@ -16,31 +26,19 @@ export function enhancePromptWithImage(userPrompt: string, hasImage: boolean): s
   );
 
   if (hasCharacterReference) {
-    if (lowerPrompt.startsWith('the person') || lowerPrompt.startsWith('the character')) {
-      return prompt;
-    }
-
     let enhanced = prompt
-      .replace(/\b(a person|the person|person)\b/gi, 'the main character from the image')
-      .replace(/\b(a character|the character|character)\b/gi, 'the main character from the image')
-      .replace(/\b(a man|the man|man)\b/gi, 'the main character from the image')
-      .replace(/\b(a woman|the woman|woman)\b/gi, 'the main character from the image')
-      .replace(/\b(they|them|their)\b/gi, (match) => {
-        if (match === 'their') return 'the main character\'s';
-        return 'the main character from the image';
-      });
+      .replace(/\b(a person|the person|person)\b/gi, 'the person from the image')
+      .replace(/\b(a character|the character|character)\b/gi, 'the person from the image')
+      .replace(/\b(a man|the man|man)\b/gi, 'the person from the image')
+      .replace(/\b(a woman|the woman|woman)\b/gi, 'the person from the image')
+      .replace(/\b(he|she)\b/gi, 'the person from the image')
+      .replace(/\b(they|them)\b/gi, 'the person from the image')
+      .replace(/\b(their|his|her)\b/gi, 'their');
 
-    return enhanced;
+    return `${starterInstruction} ${enhanced}`;
   }
 
-  const endsWithPunctuation = /[.!?]$/.test(prompt);
-  const addition = ', featuring the main character from the image as the focal point, maintaining their exact appearance and features';
-
-  if (endsWithPunctuation) {
-    return prompt.slice(0, -1) + addition + prompt.slice(-1);
-  }
-
-  return prompt + addition;
+  return `${starterInstruction} is ${prompt}`;
 }
 
 export function optimizeForCharacterAnimation(
@@ -50,20 +48,20 @@ export function optimizeForCharacterAnimation(
   const prompt = userPrompt.trim();
 
   const motionDescriptors = {
-    subtle: 'subtle, natural movement with gentle motion, realistic and smooth',
-    moderate: 'moderate motion with natural dynamics, balanced and engaging',
-    dynamic: 'dynamic motion with expressive movement, energetic and captivating'
+    subtle: 'Smooth natural motion, realistic movement, subtle expressions',
+    moderate: 'Natural dynamic movement, engaged and active, smooth transitions',
+    dynamic: 'Expressive energetic motion, dramatic movement, high energy'
   };
 
   const descriptor = motionDescriptors[animationType];
 
   if (prompt.toLowerCase().includes('movement') ||
       prompt.toLowerCase().includes('motion') ||
-      prompt.toLowerCase().includes('moving')) {
-    return prompt;
+      prompt.toLowerCase().includes('smooth')) {
+    return `${prompt}. Cinematic camera work, professional quality`;
   }
 
-  return `${prompt}. ${descriptor}, cinematic quality, professional lighting`;
+  return `${prompt}. ${descriptor}. Cinematic camera work, professional quality`;
 }
 
 export function enhanceForMovieScene(

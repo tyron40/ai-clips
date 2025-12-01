@@ -113,14 +113,19 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
           id="prompt"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder={imageUrl ? "Describe what the character should do (e.g., 'walking confidently', 'looking at camera with a smile')..." : "Describe the video you want to create..."}
+          placeholder={imageUrl ? "Describe the action (e.g., 'walking through a city street', 'turning to look at the camera', 'running in slow motion')..." : "Describe the video you want to create..."}
           rows={4}
           disabled={loading}
           required
         />
         {imageUrl && autoEnhance && (
           <p className="input-hint" style={{ color: '#10b981', marginTop: '8px' }}>
-            ✨ Auto-Enhancement Active: Your prompt will be optimized to animate the character naturally
+            ✨ <strong>Character Animation Enabled:</strong> The person in your uploaded image will be animated as the main character performing your described action
+          </p>
+        )}
+        {imageUrl && !autoEnhance && (
+          <p className="input-hint" style={{ color: '#f59e0b', marginTop: '8px' }}>
+            ⚠️ Auto-enhancement is OFF. Your image will be used as a starting frame, but character animation may not work as expected.
           </p>
         )}
       </div>
@@ -140,7 +145,7 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
             Smart Character Animation Enhancement
           </label>
           <p className="input-hint">
-            Automatically optimizes your prompt to ensure the character is animated naturally as the main focus
+            When enabled, automatically adds "The person in the starting image" to ensure your uploaded character is the main focus and gets animated
           </p>
         </div>
       )}
@@ -262,9 +267,9 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
 
       <p className="pro-tip">
         {imageUrl ? (
-          <>🎭 <strong>Character Mode:</strong> Your image will be animated as the main character. The AI will maintain their appearance throughout the video.</>
+          <>🎭 <strong>Character Mode Active:</strong> Your uploaded image will be used as the starting frame. The person in your image will be animated performing the action you describe. Keep prompts action-focused (e.g., "walking", "smiling", "dancing").</>
         ) : (
-          <>💡 <strong>Pro tip:</strong> Upload a character image to create videos featuring that specific person!</>
+          <>💡 <strong>Pro tip:</strong> Upload a self-portrait or character image, then describe what action you want them to perform!</>
         )}
       </p>
       </form>
