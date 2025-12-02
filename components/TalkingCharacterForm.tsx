@@ -68,9 +68,12 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
         throw new Error('Please enter dialogue for the character to say');
       }
 
-      const speechResponse = await fetch('/.netlify/functions/generate-speech', {
+      const apiUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-speech`;
+
+      const speechResponse = await fetch(apiUrl, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -91,7 +94,7 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
             errorMessage = `Speech generation failed (${speechResponse.status})`;
           }
         } else {
-          errorMessage = 'Speech generation service unavailable. Make sure OPENAI_API_KEY is set in Netlify environment variables.';
+          errorMessage = 'Speech generation service unavailable. Please check the configuration.';
         }
 
         throw new Error(errorMessage);
