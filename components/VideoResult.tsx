@@ -13,6 +13,7 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
   const [copied, setCopied] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [audioReady, setAudioReady] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -51,6 +52,7 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
 
       const handlePlay = async () => {
         console.log('Video playing, starting audio');
+        setUserInteracted(true);
         if (audio && audioEnabled) {
           audio.currentTime = video.currentTime;
           try {
@@ -86,7 +88,7 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
       video.addEventListener('seeked', handleSeeked);
       video.addEventListener('timeupdate', handleTimeUpdate);
 
-      if (!video.paused && audioEnabled) {
+      if (!video.paused && audioEnabled && userInteracted) {
         audio.currentTime = video.currentTime;
         audio.play().catch(err => console.error('Initial audio play error:', err));
       }
@@ -98,7 +100,7 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
         video.removeEventListener('timeupdate', handleTimeUpdate);
       };
     }
-  }, [audioUrl, audioEnabled, audioReady]);
+  }, [audioUrl, audioEnabled, audioReady, userInteracted]);
 
   const handleShare = async () => {
     try {
@@ -132,11 +134,10 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
         ref={videoRef}
         src={videoUrl}
         controls
-        autoPlay
         loop
         muted={!!audioUrl}
         playsInline
-        preload="metadata"
+        preload="auto"
         className="video-player"
         style={{ maxWidth: '100%', height: 'auto' }}
       >
@@ -144,7 +145,23 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
       </video>
 
       {audioUrl && (
-        <audio ref={audioRef} src={audioUrl} loop preload="auto" />
+        <>
+          <audio ref={audioRef} src={audioUrl} loop preload="auto" />
+          {!userInteracted && (
+            <div style={{
+              padding: '12px',
+              marginTop: '12px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              borderRadius: '8px',
+              textAlign: 'center',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}>
+              🔊 Click the play button to start video with audio
+            </div>
+          )}
+        </>
       )}
 
       <div className="video-actions">
