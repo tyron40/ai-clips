@@ -69,7 +69,7 @@ export default function HuggingPeopleForm({ onSubmit }: HuggingPeopleFormProps) 
         throw new Error('Please provide both images');
       }
 
-      const response = await fetch('/api/luma/create', {
+      const response = await fetch('/api/video/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

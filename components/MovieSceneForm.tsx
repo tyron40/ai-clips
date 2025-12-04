@@ -155,7 +155,7 @@ export default function MovieSceneForm({ onSubmit }: MovieSceneFormProps) {
 
       const imageUrl = characterImages.length > 0 ? characterImages[0].url : undefined;
 
-      const response = await fetch('/api/luma/create', {
+      const response = await fetch('/api/video/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -165,7 +165,9 @@ export default function MovieSceneForm({ onSubmit }: MovieSceneFormProps) {
         body: JSON.stringify({
           prompt: enhancedPrompt,
           imageUrl,
-          duration
+          duration,
+          mode: 'movie_scene',
+          aspectRatio: '16:9',
         }),
       });
 

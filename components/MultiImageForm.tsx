@@ -102,7 +102,7 @@ export default function MultiImageForm({ onSubmit }: MultiImageFormProps) {
       const transitionStyle = transitionStyles.find(t => t.id === transition);
       const prompt = `Create a smooth video sequence transitioning between multiple images with ${transitionStyle?.name.toLowerCase()} effect. ${transitionStyle?.description}. Professional, cinematic quality.`;
 
-      const response = await fetch('/api/luma/create', {
+      const response = await fetch('/api/video/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,8 @@ export default function MultiImageForm({ onSubmit }: MultiImageFormProps) {
         body: JSON.stringify({
           prompt,
           imageUrl: validImages[0],
-          duration: '10s'
+          duration: '10s',
+          mode: 'multi_image'
         }),
       });
 
