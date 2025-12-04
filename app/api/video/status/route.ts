@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createReplicateClient } from '@/lib/replicate';
-import { createClient } from '@/lib/supabase';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { env } from '@/lib/env';
 
+export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
@@ -19,7 +21,10 @@ export async function GET(request: NextRequest) {
     const replicate = createReplicateClient();
     const prediction = await replicate.getPrediction(id);
 
-    const supabase = createClient();
+    const supabase = createSupabaseClient(
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
 
     if (prediction.status === 'succeeded') {
       const videoUrl = Array.isArray(prediction.output)

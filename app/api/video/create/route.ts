@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createReplicateClient, replicateModels } from '@/lib/replicate';
-import { createClient } from '@/lib/supabase';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { env } from '@/lib/env';
 
+export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 interface VideoGenerationRequest {
@@ -43,7 +44,10 @@ export async function POST(request: NextRequest) {
     }
 
     const replicate = createReplicateClient();
-    const supabase = createClient();
+    const supabase = createSupabaseClient(
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
     const authHeader = request.headers.get('authorization');
     let userId: string | null = null;
 
