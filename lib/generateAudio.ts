@@ -7,9 +7,20 @@ export async function generateAudioFromText(
   }
 
   try {
-    const speechResponse = await fetch('/.netlify/functions/generate-speech', {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase configuration missing');
+      return null;
+    }
+
+    const apiUrl = `${supabaseUrl}/functions/v1/generate-speech`;
+
+    const speechResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -20,10 +31,15 @@ export async function generateAudioFromText(
 
     if (!speechResponse.ok) {
       const contentType = speechResponse.headers.get('content-type');
-      if (contentType && contentType.includes('text/html')) {
-        console.error('Speech generation service unavailable (Netlify function not deployed or running locally)');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          const errorData = await speechResponse.json();
+          console.error('Speech generation error:', errorData.error);
+        } catch (e) {
+          console.error('Failed to generate speech audio');
+        }
       } else {
-        console.error('Failed to generate speech audio');
+        console.error('Speech generation service unavailable');
       }
       return null;
     }
