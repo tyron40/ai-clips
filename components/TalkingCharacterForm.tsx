@@ -68,42 +68,14 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
         throw new Error('Please enter dialogue for the character to say');
       }
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-speech`;
+      const { generateAudioFromText } = await import('@/lib/generateAudio');
+      const audioUrl = await generateAudioFromText(dialogue, voiceStyle);
 
-      const speechResponse = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: dialogue,
-          voiceStyle: voiceStyle
-        }),
-      });
-
-      if (!speechResponse.ok) {
-        const contentType = speechResponse.headers.get('content-type');
-        let errorMessage = 'Failed to generate speech audio';
-
-        if (contentType && contentType.includes('application/json')) {
-          try {
-            const errorData = await speechResponse.json();
-            errorMessage = errorData.error || errorMessage;
-          } catch (e) {
-            errorMessage = `Speech generation failed (${speechResponse.status})`;
-          }
-        } else {
-          errorMessage = 'Speech generation service unavailable. Please check the configuration.';
-        }
-
-        throw new Error(errorMessage);
+      if (!audioUrl) {
+        throw new Error('Failed to generate audio. Please try again.');
       }
 
-      const audioBlob = await speechResponse.blob();
-      console.log('Audio blob received, size:', audioBlob.size, 'type:', audioBlob.type);
-      const audioUrl = URL.createObjectURL(audioBlob);
-      console.log('Audio URL created:', audioUrl);
+      console.log('Audio generated and uploaded:', audioUrl);
 
       const basePrompt = `The character speaks naturally with authentic emotion and engagement`;
       const enhancedPrompt = enhanceForTalkingCharacter(basePrompt, true);

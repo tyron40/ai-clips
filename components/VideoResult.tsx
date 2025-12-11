@@ -18,30 +18,37 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    console.log('VideoResult rendered with audioUrl:', audioUrl);
+    console.log('[VideoResult] Rendered with audioUrl:', audioUrl);
+    console.log('[VideoResult] Audio type:', typeof audioUrl);
+    console.log('[VideoResult] Audio is valid:', !!audioUrl);
   }, [audioUrl]);
 
   useEffect(() => {
     if (audioUrl && audioRef.current) {
       const audio = audioRef.current;
+      console.log('[Audio Setup] Starting audio setup with URL:', audioUrl);
 
       const handleCanPlay = () => {
-        console.log('Audio can play, ready to sync');
+        console.log('[Audio Setup] Audio can play, ready to sync');
         setAudioReady(true);
       };
 
       const handleError = (e: Event) => {
-        console.error('Audio loading error:', e);
+        console.error('[Audio Setup] Audio loading error:', e);
+        console.error('[Audio Setup] Audio element:', audio);
       };
 
       audio.addEventListener('canplay', handleCanPlay);
       audio.addEventListener('error', handleError);
       audio.load();
+      console.log('[Audio Setup] Audio load initiated');
 
       return () => {
         audio.removeEventListener('canplay', handleCanPlay);
         audio.removeEventListener('error', handleError);
       };
+    } else {
+      console.log('[Audio Setup] No audioUrl or audioRef:', { audioUrl, hasRef: !!audioRef.current });
     }
   }, [audioUrl]);
 
@@ -51,16 +58,25 @@ export default function VideoResult({ videoUrl, audioUrl, onReset }: VideoResult
       const audio = audioRef.current;
 
       const handlePlay = async () => {
-        console.log('Video playing, starting audio');
+        console.log('[Video Play] Video playing, starting audio');
+        console.log('[Video Play] Audio enabled:', audioEnabled);
+        console.log('[Video Play] Audio ready:', audioReady);
         setUserInteracted(true);
         if (audio && audioEnabled) {
           audio.currentTime = video.currentTime;
+          console.log('[Video Play] Attempting to play audio from time:', video.currentTime);
           try {
             await audio.play();
-            console.log('Audio started successfully');
+            console.log('[Video Play] Audio started successfully');
           } catch (err) {
-            console.error('Audio play error:', err);
+            console.error('[Video Play] Audio play error:', err);
           }
+        } else {
+          console.log('[Video Play] Audio not playing because:', {
+            hasAudio: !!audio,
+            audioEnabled,
+            audioUrl
+          });
         }
       };
 

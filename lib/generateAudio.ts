@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export async function generateAudioFromText(
   text: string,
   voiceStyle: string = 'natural'
@@ -15,6 +17,13 @@ export async function generateAudioFromText(
       return null;
     }
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.error('Please sign in to generate audio');
+      return null;
+    }
+
+    console.log('[Audio Generation] Generating speech for text:', text.substring(0, 50) + '...');
     const apiUrl = `${supabaseUrl}/functions/v1/generate-speech`;
 
     const speechResponse = await fetch(apiUrl, {
@@ -45,8 +54,30 @@ export async function generateAudioFromText(
     }
 
     const audioBlob = await speechResponse.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
-    return audioUrl;
+    console.log('[Audio Generation] Audio blob received, size:', audioBlob.size);
+
+    const fileName = `audio-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`;
+    console.log('[Audio Upload] Uploading to Supabase storage:', fileName);
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('images')
+      .upload(fileName, audioBlob, {
+        cacheControl: '31536000',
+        upsert: false,
+        contentType: 'audio/mpeg'
+      });
+
+    if (uploadError) {
+      console.error('[Audio Upload] Upload failed:', uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('images')
+      .getPublicUrl(fileName);
+
+    console.log('[Audio Upload] Audio uploaded successfully:', publicUrl);
+    return publicUrl;
   } catch (error) {
     console.error('Error generating audio:', error);
     return null;
