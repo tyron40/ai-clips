@@ -136,10 +136,12 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
               height: '60px',
               objectFit: 'cover',
               borderRadius: '8px',
-              border: '2px solid #10b981'
+              border: uploading ? '2px solid #3b82f6' : '2px solid #10b981'
             }}
           />
-          <span style={{ fontSize: '0.9em', color: '#10b981' }}>✓ Ready to upload</span>
+          <span style={{ fontSize: '0.9em', color: uploading ? '#3b82f6' : '#10b981' }}>
+            {uploading ? 'Uploading...' : '✓ Uploaded'}
+          </span>
         </div>
       )}
       <input
