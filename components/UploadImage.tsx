@@ -40,7 +40,7 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
     const fileSize = (file.size / 1024 / 1024).toFixed(2);
     const fileSizeKB = (file.size / 1024).toFixed(0);
 
-    if (file.size < 2 * 1024 * 1024) {
+    if (file.size < 300 * 1024) {
       setUploadProgress('Uploading image...');
     } else {
       setUploadProgress(`Optimizing ${fileSizeKB}KB image...`);
@@ -52,18 +52,18 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
       progressInterval = setInterval(() => {
         if (uploadingRef.current) {
           setProgressPercent((prev) => {
-            if (prev < 90) return prev + 10;
+            if (prev < 85) return prev + 15;
             return prev;
           });
         }
-      }, 150);
+      }, 200);
 
-      if (file.size > 2 * 1024 * 1024) {
+      if (file.size > 300 * 1024) {
         setTimeout(() => {
           if (uploadingRef.current) {
-            setUploadProgress('Uploading to storage...');
+            setUploadProgress('Compressing and uploading...');
           }
-        }, 500);
+        }, 400);
       }
 
       console.log('[UPLOAD] Starting upload process...');

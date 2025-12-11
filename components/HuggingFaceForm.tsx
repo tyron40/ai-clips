@@ -66,7 +66,7 @@ export default function HuggingFaceForm({ onSubmit }: HuggingFaceFormProps) {
 
       const finalPrompt = prompt.trim() || 'Animate this image with smooth, natural motion';
 
-      const response = await fetch('/api/video/create', {
+      const response = await fetch('/api/luma/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,8 +76,7 @@ export default function HuggingFaceForm({ onSubmit }: HuggingFaceFormProps) {
         body: JSON.stringify({
           prompt: finalPrompt,
           imageUrl: finalImageUrl,
-          duration,
-          mode: 'image_to_video'
+          duration
         }),
       });
 

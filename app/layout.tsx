@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: 'AI Video Studio - Multi-Mode Video Generation',
   description: 'Create stunning AI-generated videos using Luma Dream Machine, Hugging Face, and advanced cinematic modes. Transform text and images into professional videos.',
   keywords: ['AI video', 'video generation', 'Luma', 'Hugging Face', 'text to video', 'image to video'],

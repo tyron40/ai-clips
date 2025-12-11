@@ -58,7 +58,7 @@ export default function Home() {
 
     const pollStatus = async () => {
       try {
-        const response = await fetch(`/api/video/status?id=${videoState.id}`);
+        const response = await fetch(`/api/luma/status?id=${videoState.id}`);
 
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
@@ -75,7 +75,6 @@ export default function Home() {
           id: videoState.id,
           status: data.status,
           videoUrl: data.video_url,
-          audioUrl: data.audio_url,
           error: data.error,
         };
 
@@ -90,10 +89,9 @@ export default function Home() {
             .update({
               status: 'completed',
               video_url: data.video_url,
-              audio_url: data.audio_url,
               completed_at: new Date().toISOString()
             })
-            .eq('generation_id', videoState.id);
+            .eq('luma_id', videoState.id);
         } else if (data.status === 'failed') {
           await supabase
             .from('videos')
@@ -101,7 +99,7 @@ export default function Home() {
               status: 'failed',
               error_message: data.error
             })
-            .eq('generation_id', videoState.id);
+            .eq('luma_id', videoState.id);
         }
       } catch (err) {
         setPollingError(err instanceof Error ? err.message : 'Polling failed');
@@ -137,12 +135,12 @@ export default function Home() {
       try {
         await supabase.from('videos').insert({
           user_id: user.id,
-          generation_id: id,
+          luma_id: id,
           prompt,
           image_url: imageUrl,
           duration: duration || '5s',
           status: 'queued',
-          mode: mode || generationMode,
+          generation_mode: mode || generationMode,
           style,
           transition,
           images: images ? JSON.stringify(images) : undefined,

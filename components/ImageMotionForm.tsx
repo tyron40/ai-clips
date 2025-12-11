@@ -75,7 +75,7 @@ export default function ImageMotionForm({ onSubmit }: ImageMotionFormProps) {
       const motion = motionTypes.find(m => m.id === motionType);
       const prompt = `Animate this image with ${motion?.name.toLowerCase()} style. ${motion?.description}. Natural, smooth, and professional animation.`;
 
-      const response = await fetch('/api/video/create', {
+      const response = await fetch('/api/luma/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

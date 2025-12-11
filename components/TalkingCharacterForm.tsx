@@ -108,7 +108,7 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
       const basePrompt = `The character speaks naturally with authentic emotion and engagement`;
       const enhancedPrompt = enhanceForTalkingCharacter(basePrompt, true);
 
-      const response = await fetch('/api/video/create', {
+      const response = await fetch('/api/luma/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,10 +118,7 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
         body: JSON.stringify({
           prompt: enhancedPrompt,
           imageUrl: characterImage,
-          duration: '5s',
-          mode: 'talking_character',
-          dialogue: dialogue,
-          voiceStyle: voiceStyle
+          duration: '5s'
         }),
       });
 

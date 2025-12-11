@@ -48,7 +48,7 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
         console.log('[PROMPT ENHANCED]', { original: prompt, enhanced: finalPrompt });
       }
 
-      const response = await fetch('/api/video/create', {
+      const response = await fetch('/api/luma/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,7 +59,6 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
           prompt: finalPrompt,
           imageUrl: imageUrl.trim() || undefined,
           duration,
-          mode: 'text_to_video',
         }),
       });
 
