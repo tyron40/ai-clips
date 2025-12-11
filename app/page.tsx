@@ -75,6 +75,7 @@ export default function Home() {
           id: videoState.id,
           status: data.status,
           videoUrl: data.video_url,
+          audioUrl: videoState.audioUrl,
           error: data.error,
         };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Trash2, Play, Calendar } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +20,8 @@ export default function VideoGalleryView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const modalVideoRef = useRef<HTMLVideoElement>(null);
+  const modalAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -159,14 +161,32 @@ export default function VideoGalleryView() {
         <div className="gallery-modal" onClick={() => setSelectedVideo(null)}>
           <div className="gallery-modal-content" onClick={(e) => e.stopPropagation()}>
             <video
+              ref={modalVideoRef}
               src={selectedVideo.video_url}
               controls
               autoPlay
               loop
+              muted={!!selectedVideo.audio_url}
               className="gallery-modal-video"
+              onPlay={() => {
+                if (selectedVideo.audio_url && modalAudioRef.current) {
+                  modalAudioRef.current.currentTime = modalVideoRef.current?.currentTime || 0;
+                  modalAudioRef.current.play().catch(err => console.error('Audio play error:', err));
+                }
+              }}
+              onPause={() => {
+                if (modalAudioRef.current) {
+                  modalAudioRef.current.pause();
+                }
+              }}
+              onSeeked={() => {
+                if (modalAudioRef.current && modalVideoRef.current) {
+                  modalAudioRef.current.currentTime = modalVideoRef.current.currentTime;
+                }
+              }}
             />
             {selectedVideo.audio_url && (
-              <audio src={selectedVideo.audio_url} autoPlay loop />
+              <audio ref={modalAudioRef} src={selectedVideo.audio_url} loop />
             )}
             <div className="gallery-modal-info">
               <h3>{selectedVideo.generation_mode || 'Video'}</h3>
