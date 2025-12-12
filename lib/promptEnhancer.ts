@@ -6,9 +6,9 @@ export function enhancePromptWithImage(userPrompt: string, hasImage: boolean): s
   const prompt = userPrompt.trim();
   const lowerPrompt = prompt.toLowerCase();
 
-  const starterInstruction = 'The person in the starting image';
-  const facingRule = 'The person remains facing forward toward the camera, maintaining direct frontal view and eye contact with the viewer throughout the entire video.';
-  const appearanceRule = 'The person maintains their exact facial features, appearance, and identity from the starting image with no changes to their face or body.';
+  const starterInstruction = 'The exact same person from the starting image';
+  const facingRule = 'CRITICAL: The character MUST face directly forward toward the camera at all times, maintaining constant frontal view with face toward viewer, never turning away or showing side profile.';
+  const appearanceRule = 'CRITICAL: Maintain the EXACT SAME FACE, identity, and all physical features from the starting image with zero alterations - same person throughout, no face changes.';
 
   let basePrompt = '';
 
@@ -52,10 +52,10 @@ export function enhancePromptWithImage(userPrompt: string, hasImage: boolean): s
                            lowerPrompt.includes('side view');
 
   if (hasTurningAction) {
-    return `${basePrompt}. STRICT RULE: ${facingRule} ${appearanceRule}`;
+    return `${basePrompt}. OVERRIDE: Despite any turning mentioned, ${facingRule} ${appearanceRule}`;
   }
 
-  return `${basePrompt}, always facing forward toward the camera with direct frontal view. ${facingRule} ${appearanceRule}`;
+  return `${basePrompt}, with head and face continuously directed straight at camera, frontal view locked. ${facingRule} ${appearanceRule}`;
 }
 
 export function optimizeForCharacterAnimation(
@@ -65,20 +65,21 @@ export function optimizeForCharacterAnimation(
   const prompt = userPrompt.trim();
 
   const motionDescriptors = {
-    subtle: 'Smooth natural motion with subtle expressions, keeping frontal orientation',
-    moderate: 'Natural dynamic movement while maintaining forward-facing position, engaged and active',
-    dynamic: 'Expressive energetic motion, dramatic movement with frontal camera presence, high energy'
+    subtle: 'Smooth natural motion with subtle expressions, face always directed straight at camera',
+    moderate: 'Natural dynamic movement with head and face locked forward toward viewer, engaged and active',
+    dynamic: 'Expressive energetic motion with face continuously facing camera head-on, high energy frontal presence'
   };
 
   const descriptor = motionDescriptors[animationType];
+  const lockRule = 'Character face remains locked forward toward camera, never turning sideways or away';
 
   if (prompt.toLowerCase().includes('movement') ||
       prompt.toLowerCase().includes('motion') ||
       prompt.toLowerCase().includes('smooth')) {
-    return `${prompt}. Keep character facing camera. Cinematic camera work, professional quality`;
+    return `${prompt}. ${lockRule}. Cinematic camera work, professional quality`;
   }
 
-  return `${prompt}. ${descriptor}. Keep character facing camera throughout. Cinematic camera work, professional quality`;
+  return `${prompt}. ${descriptor}. ${lockRule}. Cinematic camera work, professional quality`;
 }
 
 export function enhanceForMovieScene(
@@ -99,10 +100,10 @@ export function enhanceForMovieScene(
 
   const enhancement = styleEnhancements[style] || '';
   const characterFocus = hasCharacter
-    ? 'The main character from the image is the focal point, maintaining their exact appearance. '
+    ? 'The EXACT SAME character from the starting image is the focal point, maintaining their identical face, features, and appearance with face directed toward camera. '
     : '';
 
-  return `${characterFocus}${userPrompt.trim()}. ${enhancement}. Cinematic ${style} genre, professional film quality, 4K resolution`;
+  return `${characterFocus}${userPrompt.trim()}. ${enhancement}. Character faces camera throughout. Cinematic ${style} genre, professional film quality, 4K resolution`;
 }
 
 export function enhanceForTalkingCharacter(
@@ -112,20 +113,20 @@ export function enhanceForTalkingCharacter(
   const prompt = userPrompt.trim();
 
   if (!hasDialogue) {
-    return `${prompt}. The main character from the image maintains their exact appearance, with natural facial expressions and subtle movements, professional quality`;
+    return `${prompt}. The EXACT SAME character from the starting image, maintaining identical face and features, facing directly toward camera with natural facial expressions, professional quality`;
   }
 
-  const dialogueEnhancement = 'The main character from the image speaks with natural lip-sync, ' +
-    'realistic facial expressions, subtle head movements, and authentic emotion. ' +
-    'Maintain exact character appearance from the image. ';
+  const dialogueEnhancement = 'The EXACT SAME character from the starting image speaks while facing camera head-on, with natural lip-sync to audio, ' +
+    'realistic facial expressions, subtle natural head movements, and authentic emotion. ' +
+    'CRITICAL: Same person, same face from image, face directed toward viewer throughout. ';
 
   if (prompt.toLowerCase().includes('speaking') ||
       prompt.toLowerCase().includes('talking') ||
       prompt.toLowerCase().includes('says')) {
-    return `${dialogueEnhancement}${prompt}. Professional quality, perfect lip synchronization`;
+    return `${dialogueEnhancement}${prompt}. Face toward camera. Professional quality, perfect lip synchronization`;
   }
 
-  return `${dialogueEnhancement}${prompt}. Natural speaking animation with perfect lip-sync, professional quality`;
+  return `${dialogueEnhancement}${prompt}. Character faces camera while speaking with perfect lip-sync, professional quality`;
 }
 
 export function enhanceForMultiImage(
@@ -144,7 +145,7 @@ export function enhanceForMultiImage(
   const descriptor = transitionDescriptors[transition] || 'smooth transition';
   const prompt = userPrompt.trim();
 
-  return `${prompt}. ${descriptor} between ${imageCount} images, maintaining character consistency and identity throughout. Each image flows naturally to the next. Professional quality, cinematic composition`;
+  return `${prompt}. ${descriptor} between ${imageCount} images. CRITICAL: Maintain the EXACT SAME character face and identity across all frames - same person throughout with no face changes. Characters face camera. Professional quality, cinematic composition`;
 }
 
 export function enhanceForImageMotion(
@@ -163,12 +164,12 @@ export function enhanceForImageMotion(
 
   const descriptor = motionDescriptors[motionType] || 'dynamic camera movement';
   const characterNote = hasCharacter
-    ? 'The main character from the image remains the focal point. '
+    ? 'The EXACT SAME character from the starting image remains the focal point, maintaining identical appearance and facing toward camera. '
     : '';
 
   const prompt = userPrompt.trim();
 
-  return `${characterNote}${prompt}. ${descriptor}, maintaining subject focus, professional cinematography, smooth motion`;
+  return `${characterNote}${prompt}. ${descriptor}, maintaining subject focus with face directed at viewer, professional cinematography, smooth motion`;
 }
 
 export function validatePrompt(prompt: string): { valid: boolean; error?: string } {
