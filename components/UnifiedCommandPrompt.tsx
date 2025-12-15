@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { Terminal, Upload, Image as ImageIcon, Volume2, Sparkles } from 'lucide-react';
+import { Upload, Image as ImageIcon, Volume2, Sparkles } from 'lucide-react';
 import UploadImage from './UploadImage';
 import { generateAudioFromText } from '@/lib/generateAudio';
 import { enhancePromptWithImage, validatePrompt } from '@/lib/promptEnhancer';
@@ -23,8 +23,49 @@ interface UnifiedCommandPromptProps {
   ) => void;
 }
 
+interface TabOption {
+  id: GenerationMode;
+  label: string;
+  example: string;
+  placeholder: string;
+}
+
+const tabs: TabOption[] = [
+  {
+    id: 'luma',
+    label: 'Text to Video',
+    example: 'A beautiful sunset over mountains with birds flying',
+    placeholder: 'Describe the video you want to create...'
+  },
+  {
+    id: 'image-motion',
+    label: 'Image Animation',
+    example: 'Animate this image with a zoom motion',
+    placeholder: 'Describe how you want your image to be animated...'
+  },
+  {
+    id: 'talking-character',
+    label: 'Talking Character',
+    example: 'Create a talking character that explains AI',
+    placeholder: 'Describe what you want the character to say or do...'
+  },
+  {
+    id: 'movie-scene',
+    label: 'Cinematic Scene',
+    example: 'A noir detective walking in the rain',
+    placeholder: 'Describe your cinematic scene...'
+  },
+  {
+    id: 'hugging-people',
+    label: 'Hugging Video',
+    example: 'Make these two people hug each other',
+    placeholder: 'Describe the hugging scene...'
+  }
+];
+
 export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptProps) {
-  const [command, setCommand] = useState('');
+  const [selectedTab, setSelectedTab] = useState<GenerationMode>('luma');
+  const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [secondImageUrl, setSecondImageUrl] = useState('');
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
@@ -35,48 +76,12 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const detectMode = (cmd: string): { mode: GenerationMode; style?: string; transition?: string; motionType?: string } => {
-    const lower = cmd.toLowerCase();
-
-    if (lower.includes('talk') || lower.includes('speak') || lower.includes('say') || lower.includes('lip sync')) {
-      return { mode: 'talking-character' };
-    }
-    if (lower.includes('hug') || lower.includes('embrace')) {
-      return { mode: 'hugging-people' };
-    }
-    if (lower.includes('sequence') || lower.includes('slideshow') || lower.includes('blend')) {
-      const transition = lower.includes('dissolve') ? 'dissolve' : lower.includes('wipe') ? 'wipe' : 'fade';
-      return { mode: 'multi-image', transition };
-    }
-    if (lower.includes('cinema') || lower.includes('movie') || lower.includes('film') || lower.includes('scene')) {
-      let style = 'cinematic';
-      if (lower.includes('noir')) style = 'noir';
-      else if (lower.includes('sci-fi') || lower.includes('scifi')) style = 'sci-fi';
-      else if (lower.includes('horror')) style = 'horror';
-      else if (lower.includes('romance')) style = 'romance';
-      else if (lower.includes('action')) style = 'action';
-      return { mode: 'movie-scene', style };
-    }
-    if (lower.includes('motion') || lower.includes('move') || lower.includes('animate')) {
-      let motionType = 'natural';
-      if (lower.includes('zoom')) motionType = 'zoom';
-      else if (lower.includes('pan')) motionType = 'pan';
-      else if (lower.includes('tilt')) motionType = 'tilt';
-      else if (lower.includes('rotate')) motionType = 'rotate';
-      else if (lower.includes('dolly')) motionType = 'dolly';
-      return { mode: 'image-motion', motionType };
-    }
-    if (imageUrl && (lower.includes('animate') || lower.includes('from image'))) {
-      return { mode: 'huggingface' };
-    }
-
-    return { mode: 'luma' };
-  };
+  const currentTab = tabs.find(t => t.id === selectedTab) || tabs[0];
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    const validation = validatePrompt(command);
+    const validation = validatePrompt(prompt);
     if (!validation.valid) {
       setError(validation.error || 'Invalid prompt');
       return;
@@ -86,26 +91,32 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
     setError(null);
 
     try {
-      const detection = detectMode(command);
-      const mode = detection.mode;
-
       let audioUrl: string | null = null;
       if (dialogue.trim()) {
         audioUrl = await generateAudioFromText(dialogue, voiceStyle);
       }
 
-      let finalPrompt = command.trim();
-      if (imageUrl && mode === 'luma') {
+      let finalPrompt = prompt.trim();
+      if (imageUrl && selectedTab === 'luma') {
         finalPrompt = enhancePromptWithImage(finalPrompt, true);
       }
 
       let images: string[] = [];
-      if (mode === 'hugging-people' && imageUrl && secondImageUrl) {
+      let style: string | undefined;
+      let transition: string | undefined;
+      let motionType: string | undefined;
+
+      if (selectedTab === 'hugging-people' && imageUrl && secondImageUrl) {
         images = [imageUrl, secondImageUrl];
-      } else if (mode === 'multi-image' && additionalImages.length > 0) {
+      } else if (selectedTab === 'multi-image' && additionalImages.length > 0) {
         images = [imageUrl, ...additionalImages].filter(Boolean);
-      } else if (mode === 'movie-scene' && additionalImages.length > 0) {
-        images = additionalImages;
+      } else if (selectedTab === 'movie-scene') {
+        style = 'cinematic';
+        if (additionalImages.length > 0) {
+          images = additionalImages;
+        }
+      } else if (selectedTab === 'image-motion') {
+        motionType = 'natural';
       }
 
       const response = await fetch('/api/luma/create', {
@@ -119,7 +130,7 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
           prompt: finalPrompt,
           imageUrl: imageUrl.trim() || undefined,
           duration,
-          mode,
+          mode: selectedTab,
         }),
       });
 
@@ -139,16 +150,16 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
         finalPrompt,
         imageUrl.trim() || undefined,
         duration,
-        mode,
-        detection.style,
-        detection.transition,
+        selectedTab,
+        style,
+        transition,
         images.length > 0 ? images : undefined,
-        detection.motionType,
+        motionType,
         dialogue.trim() || undefined,
         audioUrl || undefined
       );
 
-      setCommand('');
+      setPrompt('');
       setImageUrl('');
       setSecondImageUrl('');
       setAdditionalImages([]);
@@ -178,33 +189,32 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
 
   return (
     <div className="unified-prompt">
-      <div className="command-header">
-        <Terminal size={24} />
-        <div>
-          <h2>AI Video Command Prompt</h2>
-          <p>Describe what you want to create. The system will automatically detect the best mode.</p>
-        </div>
+      <div className="tabs-container">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={`tab ${selectedTab === tab.id ? 'tab-active' : ''}`}
+            onClick={() => setSelectedTab(tab.id)}
+          >
+            <div className="tab-label">{tab.label}</div>
+            <div className="tab-example">{tab.example}</div>
+          </button>
+        ))}
       </div>
 
       <form onSubmit={handleSubmit} className="prompt-form">
         <div className="form-group">
-          <label htmlFor="command">
-            <Terminal size={16} style={{ display: 'inline', marginRight: '8px' }} />
-            Command Prompt
-          </label>
+          <label htmlFor="prompt">Your Prompt</label>
           <textarea
-            id="command"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            placeholder="Examples:&#10;• Create a cinematic noir scene of a detective walking down a rainy street&#10;• Animate this image with a slow zoom motion&#10;• Make these two people hug each other&#10;• Create a talking character that says hello&#10;• Blend multiple images into a slideshow with dissolve transitions"
+            id="prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder={currentTab.placeholder}
             rows={4}
             disabled={loading}
             required
-            style={{ fontFamily: 'monospace' }}
           />
-          <p className="input-hint">
-            💡 <strong>Smart Detection:</strong> Keywords like "cinematic", "animate", "hug", "talk", "motion", "slideshow" will auto-select the best generation mode
-          </p>
         </div>
 
         <div className="form-group">
@@ -373,18 +383,6 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
           {loading ? 'Processing...' : 'Generate Video'}
         </button>
       </form>
-
-      <div className="command-examples">
-        <h3>Example Commands:</h3>
-        <ul>
-          <li><strong>Text to Video:</strong> "A beautiful sunset over mountains with birds flying"</li>
-          <li><strong>Image Animation:</strong> "Animate this image with a zoom motion"</li>
-          <li><strong>Talking Character:</strong> "Create a talking character that explains AI"</li>
-          <li><strong>Cinematic Scene:</strong> "A noir detective walking in the rain"</li>
-          <li><strong>Hugging Video:</strong> "Make these two people hug each other"</li>
-          <li><strong>Image Sequence:</strong> "Create a slideshow with dissolve transitions"</li>
-        </ul>
-      </div>
     </div>
   );
 }
