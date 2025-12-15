@@ -87,6 +87,17 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
       return;
     }
 
+    if (selectedTab === 'talking-character') {
+      if (!imageUrl.trim()) {
+        setError('Character image is required for talking character mode');
+        return;
+      }
+      if (!dialogue.trim()) {
+        setError('Dialogue text is required for talking character mode');
+        return;
+      }
+    }
+
     setLoading(true);
     setError(null);
 
@@ -94,6 +105,9 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
       let audioUrl: string | null = null;
       if (dialogue.trim()) {
         audioUrl = await generateAudioFromText(dialogue, voiceStyle);
+        if (!audioUrl && selectedTab === 'talking-character') {
+          throw new Error('Failed to generate voice audio. Please try again.');
+        }
       }
 
       let finalPrompt = prompt.trim();
@@ -220,7 +234,7 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
         <div className="form-group">
           <label htmlFor="imageUrl">
             <ImageIcon size={16} style={{ display: 'inline', marginRight: '8px' }} />
-            Primary Image (Optional)
+            {selectedTab === 'talking-character' ? 'Character Image (Required)' : 'Primary Image (Optional)'}
           </label>
           <input
             id="imageUrl"
@@ -233,18 +247,79 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
           <UploadImage onUploadComplete={setImageUrl} />
         </div>
 
-        <div className="form-group">
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="add-image-btn"
-          >
-            <Sparkles size={16} />
-            {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
-          </button>
-        </div>
+        {selectedTab === 'talking-character' && (
+          <>
+            <div className="form-group">
+              <label htmlFor="dialogue">
+                <Volume2 size={16} style={{ display: 'inline', marginRight: '8px' }} />
+                What Should The Character Say? (Required)
+              </label>
+              <textarea
+                id="dialogue"
+                value={dialogue}
+                onChange={(e) => setDialogue(e.target.value)}
+                placeholder="Enter the dialogue or script for your character to speak..."
+                rows={3}
+                disabled={loading}
+                required={selectedTab === 'talking-character'}
+              />
+              <p className="input-hint">The character will speak these words with realistic voice and lip-sync</p>
+            </div>
 
-        {showAdvanced && (
+            <div className="form-group">
+              <label>Voice Style</label>
+              <div className="duration-options">
+                <button
+                  type="button"
+                  className={`duration-option ${voiceStyle === 'natural' ? 'active' : ''}`}
+                  onClick={() => setVoiceStyle('natural')}
+                  disabled={loading}
+                >
+                  Natural
+                </button>
+                <button
+                  type="button"
+                  className={`duration-option ${voiceStyle === 'dramatic' ? 'active' : ''}`}
+                  onClick={() => setVoiceStyle('dramatic')}
+                  disabled={loading}
+                >
+                  Dramatic
+                </button>
+                <button
+                  type="button"
+                  className={`duration-option ${voiceStyle === 'professional' ? 'active' : ''}`}
+                  onClick={() => setVoiceStyle('professional')}
+                  disabled={loading}
+                >
+                  Professional
+                </button>
+                <button
+                  type="button"
+                  className={`duration-option ${voiceStyle === 'friendly' ? 'active' : ''}`}
+                  onClick={() => setVoiceStyle('friendly')}
+                  disabled={loading}
+                >
+                  Friendly
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {selectedTab !== 'talking-character' && (
+          <div className="form-group">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="add-image-btn"
+            >
+              <Sparkles size={16} />
+              {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
+            </button>
+          </div>
+        )}
+
+        {showAdvanced && selectedTab !== 'talking-character' && (
           <>
             <div className="form-group">
               <label htmlFor="secondImage">
@@ -352,29 +427,31 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
                 </button>
               </div>
             </div>
-
-            <div className="form-group">
-              <label>Video Duration</label>
-              <div className="duration-options">
-                <button
-                  type="button"
-                  className={`duration-option ${duration === '5s' ? 'active' : ''}`}
-                  onClick={() => setDuration('5s')}
-                  disabled={loading}
-                >
-                  5 Seconds
-                </button>
-                <button
-                  type="button"
-                  className={`duration-option ${duration === '9s' ? 'active' : ''}`}
-                  onClick={() => setDuration('9s')}
-                  disabled={loading}
-                >
-                  9 Seconds
-                </button>
-              </div>
-            </div>
           </>
+        )}
+
+        {selectedTab !== 'talking-character' && (
+          <div className="form-group">
+            <label>Video Duration</label>
+            <div className="duration-options">
+              <button
+                type="button"
+                className={`duration-option ${duration === '5s' ? 'active' : ''}`}
+                onClick={() => setDuration('5s')}
+                disabled={loading}
+              >
+                5 Seconds
+              </button>
+              <button
+                type="button"
+                className={`duration-option ${duration === '9s' ? 'active' : ''}`}
+                onClick={() => setDuration('9s')}
+                disabled={loading}
+              >
+                9 Seconds
+              </button>
+            </div>
+          </div>
         )}
 
         {error && <div className="error-message">{error}</div>}
