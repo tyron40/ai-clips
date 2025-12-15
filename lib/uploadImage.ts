@@ -97,19 +97,19 @@ export async function uploadImage(file: File): Promise<string> {
     finalContentType = 'image/webp';
   }
 
-  const shouldCompress = file.size > 300 * 1024 &&
+  const shouldCompress = file.size > 2 * 1024 * 1024 &&
     (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png' || file.type === 'image/webp');
 
   if (shouldCompress) {
     try {
-      console.log('[COMPRESSION START] Optimizing image...');
+      console.log('[COMPRESSION START] Optimizing large image...');
 
       const compressionPromise = compressImage(file);
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
           console.error('[COMPRESSION TIMEOUT] Using original file');
           reject(new Error('Compression timeout'));
-        }, 8000);
+        }, 3000);
       });
 
       uploadFile = await Promise.race([compressionPromise, timeoutPromise]);
@@ -126,7 +126,7 @@ export async function uploadImage(file: File): Promise<string> {
       uploadFile = file;
     }
   } else {
-    console.log('[NO COMPRESSION] File is already optimized or unsupported format');
+    console.log('[FAST UPLOAD] Skipping compression for optimized file size');
   }
 
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;

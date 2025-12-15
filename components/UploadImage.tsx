@@ -37,13 +37,12 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
     setError(null);
     setProgressPercent(0);
 
-    const fileSize = (file.size / 1024 / 1024).toFixed(2);
     const fileSizeKB = (file.size / 1024).toFixed(0);
 
-    if (file.size < 300 * 1024) {
-      setUploadProgress('Uploading image...');
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadProgress(`Compressing ${fileSizeKB}KB image...`);
     } else {
-      setUploadProgress(`Optimizing ${fileSizeKB}KB image...`);
+      setUploadProgress('Uploading image...');
     }
 
     let progressInterval: NodeJS.Timeout | null = null;
@@ -52,19 +51,11 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
       progressInterval = setInterval(() => {
         if (uploadingRef.current) {
           setProgressPercent((prev) => {
-            if (prev < 85) return prev + 15;
+            if (prev < 90) return prev + 10;
             return prev;
           });
         }
-      }, 200);
-
-      if (file.size > 300 * 1024) {
-        setTimeout(() => {
-          if (uploadingRef.current) {
-            setUploadProgress('Compressing and uploading...');
-          }
-        }, 400);
-      }
+      }, 100);
 
       console.log('[UPLOAD] Starting upload process...');
       const url = await uploadImage(file);
@@ -82,7 +73,7 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
           URL.revokeObjectURL(preview);
           setPreview(null);
         }
-      }, 1500);
+      }, 800);
 
       e.target.value = '';
     } catch (err) {
