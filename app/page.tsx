@@ -1,16 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import PromptForm from '@/components/PromptForm';
+import UnifiedCommandPrompt from '@/components/UnifiedCommandPrompt';
 import VideoResult from '@/components/VideoResult';
 import VideoGallery from '@/components/VideoGallery';
-import GenerationModeSelector, { GenerationMode } from '@/components/GenerationModeSelector';
-import HuggingFaceForm from '@/components/HuggingFaceForm';
-import MovieSceneForm from '@/components/MovieSceneForm';
-import MultiImageForm from '@/components/MultiImageForm';
-import HuggingPeopleForm from '@/components/HuggingPeopleForm';
-import ImageMotionForm from '@/components/ImageMotionForm';
-import TalkingCharacterForm from '@/components/TalkingCharacterForm';
+import { GenerationMode } from '@/components/GenerationModeSelector';
 import Navigation from '@/components/Navigation';
 import VideoGalleryView from '@/components/VideoGalleryView';
 import { supabase, VideoRecord } from '@/lib/supabase';
@@ -35,7 +29,6 @@ export default function Home() {
   const [pollingError, setPollingError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'home' | 'gallery'>('home');
   const [showGallery, setShowGallery] = useState(false);
-  const [generationMode, setGenerationMode] = useState<GenerationMode>('luma');
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -141,7 +134,7 @@ export default function Home() {
           image_url: imageUrl,
           duration: duration || '5s',
           status: 'queued',
-          generation_mode: mode || generationMode,
+          generation_mode: mode || 'luma',
           style,
           transition,
           images: images ? JSON.stringify(images) : undefined,
@@ -201,70 +194,7 @@ export default function Home() {
 
             <main className="main">
               {!videoState && !showGallery && (
-                <>
-                  <GenerationModeSelector
-                    selectedMode={generationMode}
-                    onSelectMode={setGenerationMode}
-                  />
-
-                  <div className="form-section">
-                    {generationMode === 'luma' && (
-                      <PromptForm
-                        onSubmit={(id, prompt, imageUrl, duration, dialogue, audioUrl) =>
-                          handleVideoCreated(id, prompt, imageUrl, duration, 'luma', undefined, undefined, undefined, undefined, dialogue, audioUrl)
-                        }
-                      />
-                    )}
-
-                    {generationMode === 'huggingface' && (
-                      <HuggingFaceForm
-                        onSubmit={(id, imageUrl, prompt, duration) =>
-                          handleVideoCreated(id, prompt || 'Animate this image', imageUrl, duration, 'huggingface')
-                        }
-                      />
-                    )}
-
-                    {generationMode === 'movie-scene' && (
-                      <MovieSceneForm
-                        onSubmit={(id, prompt, style, characterImages) =>
-                          handleVideoCreated(id, prompt, characterImages?.[0], '10s', 'movie-scene', style, undefined, characterImages)
-                        }
-                      />
-                    )}
-
-                    {generationMode === 'multi-image' && (
-                      <MultiImageForm
-                        onSubmit={(id, images, transition) =>
-                          handleVideoCreated(id, 'Image sequence video', images[0], '10s', 'multi-image', undefined, transition, images)
-                        }
-                      />
-                    )}
-
-                    {generationMode === 'hugging-people' && (
-                      <HuggingPeopleForm
-                        onSubmit={(id, image1Url, image2Url) =>
-                          handleVideoCreated(id, 'Hugging people video', image1Url, '10s', 'hugging-people', undefined, undefined, [image1Url, image2Url])
-                        }
-                      />
-                    )}
-
-                    {generationMode === 'image-motion' && (
-                      <ImageMotionForm
-                        onSubmit={(id, imageUrl, motionType) =>
-                          handleVideoCreated(id, `Image animation with ${motionType} motion`, imageUrl, '10s', 'image-motion', undefined, undefined, undefined, motionType)
-                        }
-                      />
-                    )}
-
-                    {generationMode === 'talking-character' && (
-                      <TalkingCharacterForm
-                        onSubmit={(id, prompt, imageUrl, dialogue, audioUrl) =>
-                          handleVideoCreated(id, prompt, imageUrl, '5s', 'talking-character', undefined, undefined, undefined, undefined, dialogue, audioUrl)
-                        }
-                      />
-                    )}
-                  </div>
-                </>
+                <UnifiedCommandPrompt onSubmit={handleVideoCreated} />
               )}
 
               {!videoState && showGallery && <VideoGallery onSelectVideo={handleSelectVideo} />}

@@ -1875,3 +1875,88 @@ body {
   border-radius: 2px;
 }
 
+.unified-prompt {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.command-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.command-header svg {
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.command-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0 0 0.25rem 0;
+}
+
+.command-header p {
+  font-size: 0.9rem;
+  color: #718096;
+  margin: 0;
+}
+
+.command-examples {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f7fafc;
+  border-radius: 12px;
+  border-left: 4px solid #d97706;
+}
+
+.command-examples h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 1rem 0;
+}
+
+.command-examples ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.command-examples li {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #4a5568;
+}
+
+.command-examples strong {
+  color: #d97706;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .unified-prompt {
+    padding: 1.5rem;
+  }
+
+  .command-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .command-examples {
+    padding: 1rem;
+  }
+}
