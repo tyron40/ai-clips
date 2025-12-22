@@ -39,7 +39,7 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
 
     const fileSizeKB = (file.size / 1024).toFixed(0);
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 3 * 1024 * 1024) {
       setUploadProgress(`Compressing ${fileSizeKB}KB image...`);
     } else {
       setUploadProgress('Uploading image...');
@@ -51,11 +51,11 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
       progressInterval = setInterval(() => {
         if (uploadingRef.current) {
           setProgressPercent((prev) => {
-            if (prev < 90) return prev + 10;
+            if (prev < 90) return prev + 15;
             return prev;
           });
         }
-      }, 100);
+      }, 80);
 
       console.log('[UPLOAD] Starting upload process...');
       const url = await uploadImage(file);

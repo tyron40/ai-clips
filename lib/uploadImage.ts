@@ -12,18 +12,18 @@ async function compressImage(file: File): Promise<Blob> {
       let width = img.width;
       let height = img.height;
 
-      const maxDimension = 1920;
-      let quality = 0.85;
+      const maxDimension = 1280;
+      let quality = 0.8;
 
       if (file.size > 5 * 1024 * 1024) {
-        quality = 0.75;
+        quality = 0.7;
         const ratio = maxDimension / Math.max(width, height);
         if (ratio < 1) {
           width = Math.round(width * ratio);
           height = Math.round(height * ratio);
         }
-      } else if (file.size > 2 * 1024 * 1024) {
-        quality = 0.8;
+      } else if (file.size > 3 * 1024 * 1024) {
+        quality = 0.75;
         if (Math.max(width, height) > maxDimension) {
           const ratio = maxDimension / Math.max(width, height);
           width = Math.round(width * ratio);
@@ -97,7 +97,7 @@ export async function uploadImage(file: File): Promise<string> {
     finalContentType = 'image/webp';
   }
 
-  const shouldCompress = file.size > 2 * 1024 * 1024 &&
+  const shouldCompress = file.size > 3 * 1024 * 1024 &&
     (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png' || file.type === 'image/webp');
 
   if (shouldCompress) {
@@ -109,7 +109,7 @@ export async function uploadImage(file: File): Promise<string> {
         setTimeout(() => {
           console.error('[COMPRESSION TIMEOUT] Using original file');
           reject(new Error('Compression timeout'));
-        }, 3000);
+        }, 1500);
       });
 
       uploadFile = await Promise.race([compressionPromise, timeoutPromise]);
