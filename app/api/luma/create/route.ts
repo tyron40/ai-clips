@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLumaVideo } from '@/lib/luma';
 import { rateLimit, getClientIdentifier } from '@/lib/rateLimit';
+import { enhancePromptWithGemini } from '@/lib/gemini';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { prompt, imageUrl, duration, endImageUrl } = body;
+    const { prompt, imageUrl, duration, endImageUrl, mode = 'text-to-video' } = body;
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
       return NextResponse.json(
@@ -78,7 +79,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await createLumaVideo(apiKey, prompt, imageUrl, duration, endImageUrl);
+    console.log('[LUMA API] Enhancing prompt with Gemini...');
+    const enhancedPrompt = await enhancePromptWithGemini(
+      prompt,
+      mode,
+      !!imageUrl
+    );
+    console.log('[LUMA API] Original prompt:', prompt);
+    console.log('[LUMA API] Enhanced prompt:', enhancedPrompt);
+
+    const result = await createLumaVideo(apiKey, enhancedPrompt, imageUrl, duration, endImageUrl);
 
     return NextResponse.json(
       { id: result.id },
