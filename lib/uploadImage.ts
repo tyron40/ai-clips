@@ -82,19 +82,38 @@ export async function uploadImage(file: File): Promise<string> {
   let fileExt = 'jpg';
   const startTime = Date.now();
 
-  if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+  const fileNameLower = file.name.toLowerCase();
+  if (file.type === 'image/heic' || file.type === 'image/heif' || fileNameLower.endsWith('.heic') || fileNameLower.endsWith('.heif')) {
     console.log('[HEIC/HEIF DETECTED] Uploading without compression');
     finalContentType = 'image/heic';
     fileExt = 'heic';
-  } else if (file.type === 'image/png') {
+  } else if (file.type === 'image/png' || fileNameLower.endsWith('.png')) {
     fileExt = 'png';
     finalContentType = 'image/png';
-  } else if (file.type === 'image/gif') {
+  } else if (file.type === 'image/gif' || fileNameLower.endsWith('.gif')) {
     fileExt = 'gif';
     finalContentType = 'image/gif';
-  } else if (file.type === 'image/webp') {
+  } else if (file.type === 'image/webp' || fileNameLower.endsWith('.webp')) {
     fileExt = 'webp';
     finalContentType = 'image/webp';
+  } else if (file.type === 'image/bmp' || fileNameLower.endsWith('.bmp')) {
+    fileExt = 'bmp';
+    finalContentType = 'image/bmp';
+  } else if (file.type === 'image/svg+xml' || fileNameLower.endsWith('.svg')) {
+    fileExt = 'svg';
+    finalContentType = 'image/svg+xml';
+  } else if (file.type === 'image/tiff' || fileNameLower.endsWith('.tiff') || fileNameLower.endsWith('.tif')) {
+    fileExt = 'tiff';
+    finalContentType = 'image/tiff';
+  } else if (file.type === 'image/avif' || fileNameLower.endsWith('.avif')) {
+    fileExt = 'avif';
+    finalContentType = 'image/avif';
+  } else if (file.type.startsWith('image/')) {
+    const extMatch = fileNameLower.match(/\.(\w+)$/);
+    if (extMatch) {
+      fileExt = extMatch[1];
+      finalContentType = file.type;
+    }
   }
 
   const shouldCompress = file.size > 3 * 1024 * 1024 &&
@@ -199,20 +218,12 @@ export async function uploadImage(file: File): Promise<string> {
 }
 
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
-  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
   const maxSize = 10 * 1024 * 1024;
 
-  if (!file.type.startsWith('image/')) {
+  if (!file.type.startsWith('image/') && !file.name.match(/\.(jpg|jpeg|png|gif|webp|heic|heif|bmp|svg|tiff|ico|avif)$/i)) {
     return {
       valid: false,
       error: 'Invalid file type. Please upload an image file.'
-    };
-  }
-
-  if (!validTypes.includes(file.type.toLowerCase()) && !file.type.startsWith('image/')) {
-    return {
-      valid: false,
-      error: 'Invalid file type. Please upload a JPG, PNG, GIF, WebP, or HEIC image.'
     };
   }
 

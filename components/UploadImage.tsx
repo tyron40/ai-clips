@@ -138,7 +138,7 @@ export default function UploadImage({ onUploadComplete }: UploadImageProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif,.heic,.heif"
+        accept="image/*"
         onChange={handleFileChange}
         disabled={uploading}
         className="file-input"
