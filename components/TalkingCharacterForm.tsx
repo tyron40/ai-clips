@@ -6,7 +6,19 @@ import { uploadImage, validateImageFile } from '@/lib/uploadImage';
 import { enhanceForTalkingCharacter } from '@/lib/promptEnhancer';
 
 interface TalkingCharacterFormProps {
-  onSubmit: (jobId: string, prompt: string, imageUrl: string, dialogue: string, audioUrl: string, voiceStyle: string) => void;
+  onSubmit: (
+    id: string,
+    prompt: string,
+    imageUrl?: string,
+    duration?: string,
+    mode?: string,
+    style?: string,
+    transition?: string,
+    images?: string[],
+    motionType?: string,
+    dialogue?: string,
+    audioUrl?: string
+  ) => void;
 }
 
 const voiceStyles = [
@@ -100,7 +112,19 @@ export default function TalkingCharacterForm({ onSubmit }: TalkingCharacterFormP
         throw new Error(data.error || 'Failed to create talking character video');
       }
 
-      onSubmit(data.id, enhancedPrompt, characterImage, dialogue, audioUrl, voiceStyle);
+      onSubmit(
+        data.id,
+        enhancedPrompt,
+        characterImage,
+        '5s',
+        'talking-character',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        dialogue,
+        audioUrl
+      );
       setDialogue('');
       setCharacterImage(null);
     } catch (err) {

@@ -122,6 +122,7 @@ export default function Home() {
     setVideoState({
       id,
       status: 'queued',
+      audioUrl,
     });
     setPollingError(null);
 
