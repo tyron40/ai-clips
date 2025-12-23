@@ -1,27 +1,32 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTIwMDAsImV4cCI6MTk2MDc2ODAwMH0.placeholder';
 
-export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-  global: {
-    headers: {
-      'x-client-info': 'ai-video-studio',
-    },
-  },
-});
+let supabaseInstance: SupabaseClient | null = null;
+
+function getSupabaseClient() {
+  if (!supabaseInstance) {
+    supabaseInstance = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storageKey: 'ai-video-studio-auth',
+      },
+      global: {
+        headers: {
+          'x-client-info': 'ai-video-studio',
+        },
+      },
+    });
+  }
+  return supabaseInstance;
+}
+
+export const supabase = getSupabaseClient();
 
 export function createClient() {
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  });
+  return getSupabaseClient();
 }
 
 export interface VideoRecord {
