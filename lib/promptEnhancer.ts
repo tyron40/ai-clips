@@ -6,9 +6,10 @@ export function enhancePromptWithImage(userPrompt: string, hasImage: boolean): s
   const prompt = userPrompt.trim();
   const lowerPrompt = prompt.toLowerCase();
 
-  const starterInstruction = 'The exact same person from the starting image';
-  const facingRule = 'CRITICAL: The character MUST face directly forward toward the camera at all times, maintaining constant frontal view with face toward viewer, never turning away or showing side profile.';
-  const appearanceRule = 'CRITICAL: Maintain the EXACT SAME FACE, identity, and all physical features from the starting image with zero alterations - same person throughout, no face changes.';
+  const starterInstruction = 'The exact same person from the starting image with IDENTICAL face, features, hair, clothing, and appearance';
+  const facingRule = 'CRITICAL: The character MUST face directly forward toward the camera at all times, maintaining constant frontal view with face and body toward viewer, never turning away or showing side profile.';
+  const appearanceRule = 'CRITICAL: Maintain the EXACT SAME FACE, identity, and all physical features from the starting image with ZERO alterations - same person throughout, no face changes, no appearance modifications.';
+  const framingRule = 'CAMERA FRAMING: Wide shot showing full body from head to toe, proper distance to capture entire scene and character, not zoomed in too close, complete view of environment and setting.';
 
   let basePrompt = '';
 
@@ -52,10 +53,10 @@ export function enhancePromptWithImage(userPrompt: string, hasImage: boolean): s
                            lowerPrompt.includes('side view');
 
   if (hasTurningAction) {
-    return `${basePrompt}. OVERRIDE: Despite any turning mentioned, ${facingRule} ${appearanceRule}`;
+    return `${basePrompt}. OVERRIDE: Despite any turning mentioned, ${facingRule} ${appearanceRule} ${framingRule}`;
   }
 
-  return `${basePrompt}, with head and face continuously directed straight at camera, frontal view locked. ${facingRule} ${appearanceRule}`;
+  return `${basePrompt}, with head and face continuously directed straight at camera, frontal view locked, full body visible. ${facingRule} ${appearanceRule} ${framingRule}`;
 }
 
 export function optimizeForCharacterAnimation(
@@ -65,21 +66,22 @@ export function optimizeForCharacterAnimation(
   const prompt = userPrompt.trim();
 
   const motionDescriptors = {
-    subtle: 'Smooth natural motion with subtle expressions, face always directed straight at camera',
-    moderate: 'Natural dynamic movement with head and face locked forward toward viewer, engaged and active',
-    dynamic: 'Expressive energetic motion with face continuously facing camera head-on, high energy frontal presence'
+    subtle: 'Smooth natural motion with subtle expressions, face always directed straight at camera, full body visible',
+    moderate: 'Natural dynamic movement with head and face locked forward toward viewer, engaged and active, full body in frame',
+    dynamic: 'Expressive energetic motion with face continuously facing camera head-on, high energy frontal presence, complete body visible'
   };
 
   const descriptor = motionDescriptors[animationType];
-  const lockRule = 'Character face remains locked forward toward camera, never turning sideways or away';
+  const lockRule = 'Character face and body remains locked forward toward camera, never turning sideways or away';
+  const framingRule = 'Wide shot capturing full body from head to toe, not zoomed in too close';
 
   if (prompt.toLowerCase().includes('movement') ||
       prompt.toLowerCase().includes('motion') ||
       prompt.toLowerCase().includes('smooth')) {
-    return `${prompt}. ${lockRule}. Cinematic camera work, professional quality`;
+    return `${prompt}. ${lockRule}. ${framingRule}. Cinematic camera work, professional quality`;
   }
 
-  return `${prompt}. ${descriptor}. ${lockRule}. Cinematic camera work, professional quality`;
+  return `${prompt}. ${descriptor}. ${lockRule}. ${framingRule}. Cinematic camera work, professional quality`;
 }
 
 export function enhanceForMovieScene(
@@ -90,9 +92,9 @@ export function enhanceForMovieScene(
   const styleEnhancements: Record<string, string> = {
     thriller: 'tense atmosphere, dramatic lighting, suspenseful mood, high contrast shadows',
     comedy: 'bright lighting, playful atmosphere, vibrant colors, cheerful mood',
-    drama: 'emotional depth, natural lighting, rich colors, intimate framing',
-    action: 'dynamic motion, intense energy, dramatic angles, high-impact visuals',
-    romance: 'soft lighting, warm tones, dreamy atmosphere, intimate moments',
+    drama: 'emotional depth, natural lighting, rich colors, establishing shot',
+    action: 'dynamic motion, intense energy, wide establishing angles, high-impact visuals',
+    romance: 'soft lighting, warm tones, dreamy atmosphere, full scene composition',
     horror: 'eerie atmosphere, dark shadows, unsettling mood, mysterious lighting',
     scifi: 'futuristic setting, advanced technology, sleek design, sci-fi atmosphere',
     fantasy: 'magical atmosphere, ethereal lighting, fantastical elements, enchanting mood'
@@ -100,10 +102,12 @@ export function enhanceForMovieScene(
 
   const enhancement = styleEnhancements[style] || '';
   const characterFocus = hasCharacter
-    ? 'The EXACT SAME character from the starting image is the focal point, maintaining their identical face, features, and appearance with face directed toward camera. '
+    ? 'The EXACT SAME character from the starting image with IDENTICAL face, hair, features, and appearance is the focal point, facing directly toward camera. CRITICAL: Same person, same face, zero alterations. '
     : '';
 
-  return `${characterFocus}${userPrompt.trim()}. ${enhancement}. Character faces camera throughout. Cinematic ${style} genre, professional film quality, 4K resolution`;
+  const sceneFraming = 'FULL SCENE COMPOSITION: Wide establishing shot showing complete environment and full body of character from head to toe, proper distance to capture entire scene, not zoomed in too close, complete view of setting and background.';
+
+  return `${characterFocus}${userPrompt.trim()}. ${enhancement}. Character faces camera throughout with full body visible. ${sceneFraming} Cinematic ${style} genre, professional film quality, 4K resolution`;
 }
 
 export function enhanceForTalkingCharacter(
@@ -112,21 +116,23 @@ export function enhanceForTalkingCharacter(
 ): string {
   const prompt = userPrompt.trim();
 
+  const framingRule = 'CAMERA FRAMING: Medium to wide shot showing full upper body or complete body, face clearly visible and prominent, not zoomed in too close, proper framing for talking head presentation.';
+
   if (!hasDialogue) {
-    return `${prompt}. The EXACT SAME character from the starting image, maintaining identical face and features, facing directly toward camera with natural facial expressions, professional quality`;
+    return `${prompt}. The EXACT SAME character from the starting image with IDENTICAL face, hair, and features, facing directly toward camera with natural facial expressions. ${framingRule} Professional quality`;
   }
 
-  const dialogueEnhancement = 'The EXACT SAME character from the starting image speaks while facing camera head-on, with natural lip-sync to audio, ' +
+  const dialogueEnhancement = 'The EXACT SAME character from the starting image with IDENTICAL face, hair, features, and appearance speaks while facing camera head-on, with natural lip-sync to audio, ' +
     'realistic facial expressions, subtle natural head movements, and authentic emotion. ' +
-    'CRITICAL: Same person, same face from image, face directed toward viewer throughout. ';
+    'CRITICAL: Same person, same face from image with ZERO alterations, face and body directed toward viewer throughout. ';
 
   if (prompt.toLowerCase().includes('speaking') ||
       prompt.toLowerCase().includes('talking') ||
       prompt.toLowerCase().includes('says')) {
-    return `${dialogueEnhancement}${prompt}. Face toward camera. Professional quality, perfect lip synchronization`;
+    return `${dialogueEnhancement}${prompt}. Face toward camera. ${framingRule} Professional quality, perfect lip synchronization`;
   }
 
-  return `${dialogueEnhancement}${prompt}. Character faces camera while speaking with perfect lip-sync, professional quality`;
+  return `${dialogueEnhancement}${prompt}. Character faces camera while speaking with perfect lip-sync. ${framingRule} Professional quality`;
 }
 
 export function enhanceForMultiImage(
@@ -145,7 +151,9 @@ export function enhanceForMultiImage(
   const descriptor = transitionDescriptors[transition] || 'smooth transition';
   const prompt = userPrompt.trim();
 
-  return `${prompt}. ${descriptor} between ${imageCount} images. CRITICAL: Maintain the EXACT SAME character face and identity across all frames - same person throughout with no face changes. Characters face camera. Professional quality, cinematic composition`;
+  const framingRule = 'CAMERA FRAMING: Wide shot showing full body and complete scene, proper distance to capture entire environment, not zoomed in too close, complete view throughout all transitions.';
+
+  return `${prompt}. ${descriptor} between ${imageCount} images. CRITICAL: Maintain the EXACT SAME character face, hair, features, and identity with IDENTICAL appearance across all frames - same person throughout with ZERO face or appearance changes. Characters face camera with full body visible. ${framingRule} Professional quality, cinematic composition`;
 }
 
 export function enhanceForImageMotion(
@@ -155,21 +163,23 @@ export function enhanceForImageMotion(
 ): string {
   const motionDescriptors: Record<string, string> = {
     parallax: 'parallax effect with depth and dimension, creating 3D-like movement',
-    zoom: 'smooth zoom effect, drawing focus and creating drama',
-    pan: 'cinematic pan motion, revealing the scene gradually',
-    tilt: 'subtle tilt motion, adding dynamic perspective',
-    rotate: 'gentle rotation effect, creating visual interest',
-    '3d': '3D camera movement, immersive depth and perspective'
+    zoom: 'smooth zoom effect starting wide to show full scene, drawing focus and creating drama',
+    pan: 'cinematic pan motion, revealing the complete scene gradually',
+    tilt: 'subtle tilt motion, adding dynamic perspective while maintaining full view',
+    rotate: 'gentle rotation effect, creating visual interest while showing entire scene',
+    '3d': '3D camera movement, immersive depth and perspective with wide framing'
   };
 
   const descriptor = motionDescriptors[motionType] || 'dynamic camera movement';
   const characterNote = hasCharacter
-    ? 'The EXACT SAME character from the starting image remains the focal point, maintaining identical appearance and facing toward camera. '
+    ? 'The EXACT SAME character from the starting image with IDENTICAL face, hair, features, and appearance remains the focal point, facing directly toward camera. CRITICAL: Same person with ZERO alterations. '
     : '';
+
+  const framingRule = 'CAMERA FRAMING: Wide shot capturing full body from head to toe and complete environment, proper distance to show entire scene, not zoomed in too close, full view of setting and character.';
 
   const prompt = userPrompt.trim();
 
-  return `${characterNote}${prompt}. ${descriptor}, maintaining subject focus with face directed at viewer, professional cinematography, smooth motion`;
+  return `${characterNote}${prompt}. ${descriptor}, maintaining subject focus with face and body directed at viewer, full body visible throughout. ${framingRule} Professional cinematography, smooth motion`;
 }
 
 export function validatePrompt(prompt: string): { valid: boolean; error?: string } {
