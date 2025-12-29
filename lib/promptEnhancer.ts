@@ -9,7 +9,14 @@ export function enhancePromptWithImage(userPrompt: string, hasImage: boolean): s
   const starterInstruction = 'The exact same person from the starting image with IDENTICAL face, features, hair, clothing, and appearance';
   const facingRule = 'CRITICAL: The character MUST face directly forward toward the camera at all times, maintaining constant frontal view with face and body toward viewer, never turning away or showing side profile.';
   const appearanceRule = 'CRITICAL: Maintain the EXACT SAME FACE, identity, and all physical features from the starting image with ZERO alterations - same person throughout, no face changes, no appearance modifications.';
-  const framingRule = 'CAMERA FRAMING: Wide shot showing full body from head to toe, proper distance to capture entire scene and character, not zoomed in too close, complete view of environment and setting.';
+
+  // Detect if this is an activity/scene description
+  const activityKeywords = ['walking', 'running', 'dancing', 'sitting', 'standing', 'driving', 'riding', 'playing', 'working', 'shopping', 'eating', 'drinking', 'talking', 'meeting', 'going', 'coming', 'entering', 'leaving', 'with friends', 'with people', 'at the', 'in the', 'downtown', 'outside', 'indoor', 'outdoor'];
+  const isActivityScene = activityKeywords.some(keyword => lowerPrompt.includes(keyword));
+
+  const framingRule = isActivityScene
+    ? 'COMPLETE SCENE VIEW: Ultra-wide establishing shot showing the ENTIRE environment and activity. Full body from head to toe of all people, complete surroundings including streets, buildings, stores, other people, background details. Pull camera back to show full scope of location and action. Everything in the scene visible: foreground, mid-ground, background. NOT zoomed in - expansive environmental view.'
+    : 'CAMERA FRAMING: Wide shot showing full body from head to toe, proper distance to capture entire scene and character, not zoomed in too close, complete view of environment and setting.';
 
   let basePrompt = '';
 
@@ -64,6 +71,7 @@ export function optimizeForCharacterAnimation(
   animationType: 'subtle' | 'moderate' | 'dynamic'
 ): string {
   const prompt = userPrompt.trim();
+  const lowerPrompt = prompt.toLowerCase();
 
   const motionDescriptors = {
     subtle: 'Smooth natural motion with subtle expressions, face always directed straight at camera, full body visible',
@@ -73,11 +81,18 @@ export function optimizeForCharacterAnimation(
 
   const descriptor = motionDescriptors[animationType];
   const lockRule = 'Character face and body remains locked forward toward camera, never turning sideways or away';
-  const framingRule = 'Wide shot capturing full body from head to toe, not zoomed in too close';
 
-  if (prompt.toLowerCase().includes('movement') ||
-      prompt.toLowerCase().includes('motion') ||
-      prompt.toLowerCase().includes('smooth')) {
+  // Detect if this is an activity/scene description
+  const activityKeywords = ['walking', 'running', 'dancing', 'sitting', 'standing', 'driving', 'riding', 'playing', 'working', 'shopping', 'eating', 'drinking', 'meeting', 'going', 'with friends', 'with people', 'at the', 'in the', 'downtown', 'outside', 'indoor', 'outdoor'];
+  const isActivityScene = activityKeywords.some(keyword => lowerPrompt.includes(keyword));
+
+  const framingRule = isActivityScene
+    ? 'Ultra-wide establishing shot showing complete environment with full body visible from head to toe, all surroundings and background details included, expansive scene view'
+    : 'Wide shot capturing full body from head to toe, not zoomed in too close';
+
+  if (lowerPrompt.includes('movement') ||
+      lowerPrompt.includes('motion') ||
+      lowerPrompt.includes('smooth')) {
     return `${prompt}. ${lockRule}. ${framingRule}. Cinematic camera work, professional quality`;
   }
 
@@ -102,12 +117,16 @@ export function enhanceForMovieScene(
 
   const enhancement = styleEnhancements[style] || '';
   const characterFocus = hasCharacter
-    ? 'The EXACT SAME character from the starting image with IDENTICAL face, hair, features, and appearance is the focal point, facing directly toward camera. CRITICAL: Same person, same face, zero alterations. '
+    ? 'The EXACT SAME character from the starting image with IDENTICAL face, hair, features, clothing, and appearance is the focal point, facing directly toward camera. CRITICAL: Same person, same face, zero alterations. '
     : '';
 
-  const sceneFraming = 'FULL SCENE COMPOSITION: Wide establishing shot showing complete environment and full body of character from head to toe, proper distance to capture entire scene, not zoomed in too close, complete view of setting and background.';
+  const sceneFraming = 'COMPLETE ENVIRONMENTAL VIEW: Ultra-wide cinematic establishing shot capturing the ENTIRE scene, environment, and activity from beginning to end. ' +
+    'Show full body of all characters from head to toe, complete surroundings including streets, buildings, background elements, other people, and all environmental details. ' +
+    'Proper distance to show the complete action and setting in one continuous view. ' +
+    'NOT zoomed in - pull camera back to reveal the full scope of the scene, location, and activity. ' +
+    'Everything visible: foreground, mid-ground, and background fully rendered.';
 
-  return `${characterFocus}${userPrompt.trim()}. ${enhancement}. Character faces camera throughout with full body visible. ${sceneFraming} Cinematic ${style} genre, professional film quality, 4K resolution`;
+  return `${characterFocus}${userPrompt.trim()}. ${enhancement}. Character faces camera throughout with full body visible in complete environment. ${sceneFraming} Cinematic ${style} genre, professional film quality, 4K resolution, expansive scene composition`;
 }
 
 export function enhanceForTalkingCharacter(
@@ -116,23 +135,26 @@ export function enhanceForTalkingCharacter(
 ): string {
   const prompt = userPrompt.trim();
 
-  const framingRule = 'CAMERA FRAMING: Medium to wide shot showing full upper body or complete body, face clearly visible and prominent, not zoomed in too close, proper framing for talking head presentation.';
+  const framingRule = 'CAMERA FRAMING: Medium to close-up shot focusing on face and upper body, mouth clearly visible for lip-sync, face prominent and detailed, proper framing for talking head presentation.';
 
   if (!hasDialogue) {
     return `${prompt}. The EXACT SAME character from the starting image with IDENTICAL face, hair, and features, facing directly toward camera with natural facial expressions. ${framingRule} Professional quality`;
   }
 
-  const dialogueEnhancement = 'The EXACT SAME character from the starting image with IDENTICAL face, hair, features, and appearance speaks while facing camera head-on, with natural lip-sync to audio, ' +
-    'realistic facial expressions, subtle natural head movements, and authentic emotion. ' +
-    'CRITICAL: Same person, same face from image with ZERO alterations, face and body directed toward viewer throughout. ';
+  const lipSyncRule = 'PERFECT LIP-SYNC: Mouth movements MUST match audio precisely and naturally, realistic jaw and lip articulation, accurate phoneme formation, natural speaking rhythm, micro-expressions while talking.';
+
+  const dialogueEnhancement = 'The EXACT SAME character from the starting image with IDENTICAL face, hair, features, and appearance speaks while facing camera head-on. ' +
+    'CRITICAL REQUIREMENTS: Same person with ZERO alterations from uploaded image. Mouth opens and closes in PERFECT synchronization with spoken dialogue. ' +
+    'Natural lip movements for each word, realistic jaw articulation, authentic facial expressions while speaking, subtle head movements, genuine emotion in delivery. ' +
+    'Face and mouth clearly visible throughout for optimal lip-sync visibility. ';
 
   if (prompt.toLowerCase().includes('speaking') ||
       prompt.toLowerCase().includes('talking') ||
       prompt.toLowerCase().includes('says')) {
-    return `${dialogueEnhancement}${prompt}. Face toward camera. ${framingRule} Professional quality, perfect lip synchronization`;
+    return `${dialogueEnhancement}${lipSyncRule} ${prompt}. Face toward camera with mouth movements perfectly synchronized. ${framingRule} Professional quality, flawless lip synchronization`;
   }
 
-  return `${dialogueEnhancement}${prompt}. Character faces camera while speaking with perfect lip-sync. ${framingRule} Professional quality`;
+  return `${dialogueEnhancement}${lipSyncRule} ${prompt}. Character faces camera while speaking with mouth perfectly synchronized to audio. ${framingRule} Professional quality, precise lip-sync`;
 }
 
 export function enhanceForMultiImage(
@@ -172,12 +194,19 @@ export function enhanceForImageMotion(
 
   const descriptor = motionDescriptors[motionType] || 'dynamic camera movement';
   const characterNote = hasCharacter
-    ? 'The EXACT SAME character from the starting image with IDENTICAL face, hair, features, and appearance remains the focal point, facing directly toward camera. CRITICAL: Same person with ZERO alterations. '
+    ? 'The EXACT SAME character from the starting image with IDENTICAL face, hair, features, clothing, and appearance remains the focal point, facing directly toward camera. CRITICAL: Same person with ZERO alterations. '
     : '';
 
-  const framingRule = 'CAMERA FRAMING: Wide shot capturing full body from head to toe and complete environment, proper distance to show entire scene, not zoomed in too close, full view of setting and character.';
-
   const prompt = userPrompt.trim();
+  const lowerPrompt = prompt.toLowerCase();
+
+  // Detect if this is an activity/scene description
+  const activityKeywords = ['walking', 'running', 'dancing', 'sitting', 'standing', 'driving', 'riding', 'playing', 'working', 'shopping', 'eating', 'drinking', 'meeting', 'going', 'with friends', 'with people', 'at the', 'in the', 'downtown', 'outside', 'indoor', 'outdoor'];
+  const isActivityScene = activityKeywords.some(keyword => lowerPrompt.includes(keyword));
+
+  const framingRule = isActivityScene
+    ? 'COMPLETE SCENE VIEW: Ultra-wide establishing shot capturing the ENTIRE environment and activity. Full body from head to toe of all people, complete surroundings including streets, buildings, background details. Pull camera back to show full scope of location. Everything visible: foreground, mid-ground, background. NOT zoomed in - expansive environmental view.'
+    : 'CAMERA FRAMING: Wide shot capturing full body from head to toe and complete environment, proper distance to show entire scene, not zoomed in too close, full view of setting and character.';
 
   return `${characterNote}${prompt}. ${descriptor}, maintaining subject focus with face and body directed at viewer, full body visible throughout. ${framingRule} Professional cinematography, smooth motion`;
 }
