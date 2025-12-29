@@ -3,6 +3,7 @@
 import { useState, FormEvent, ChangeEvent, useRef } from 'react';
 import { Clapperboard, Film, Upload, X, UserPlus } from 'lucide-react';
 import { uploadImage, validateImageFile } from '@/lib/uploadImage';
+import { enhanceForMovieScene } from '@/lib/promptEnhancer';
 
 interface MovieSceneFormProps {
   onSubmit: (jobId: string, prompt: string, style: string, characterImages?: string[]) => void;
@@ -135,25 +136,15 @@ export default function MovieSceneForm({ onSubmit }: MovieSceneFormProps) {
       }
 
       const style = cinematicStyles.find(s => s.id === selectedStyle);
-      let enhancedPrompt = '';
+      const hasCharacter = characterImages.length > 0;
 
-      if (characterImages.length > 0) {
-        const characterDesc = characterImages.map(char => char.role).join(', ');
-        enhancedPrompt = `FULL BODY SHOT of person from uploaded image as ${characterDesc} in a complete cinematic scene. `;
-        enhancedPrompt += `Transform the person into a FULL BODY character with complete outfit, standing or moving in the scene. `;
-        enhancedPrompt += `IMPORTANT: Show the entire person from head to toe, full figure visible. `;
-        enhancedPrompt += `${style?.prompt}. `;
-        enhancedPrompt += `Scene location and action: ${prompt}. `;
-        enhancedPrompt += `Wide establishing shot showing the complete environment and setting. `;
-        enhancedPrompt += `The character is fully integrated into the scene with appropriate clothing, props, and environment. `;
-        enhancedPrompt += `Professional camera work, cinematic composition, complete scene with detailed location, film grain texture.`;
-      } else {
-        enhancedPrompt = `${style?.prompt}. Scene: ${prompt}. `;
-        enhancedPrompt += `Wide establishing shot showing complete environment and full characters. `;
-        enhancedPrompt += `Professional camera work, cinematic composition, detailed location, film grain texture.`;
-      }
+      const enhancedPrompt = enhanceForMovieScene(
+        prompt,
+        selectedStyle,
+        hasCharacter
+      );
 
-      const imageUrl = characterImages.length > 0 ? characterImages[0].url : undefined;
+      const imageUrl = hasCharacter ? characterImages[0].url : undefined;
 
       const response = await fetch('/api/luma/create', {
         method: 'POST',
