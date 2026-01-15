@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Download, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface BatchVideo {
   id: string;
@@ -43,6 +44,25 @@ export default function BatchVideoResults({ videos, onClose }: BatchVideoResults
               };
               return updated;
             });
+
+            if (data.status === 'completed' && data.video_url) {
+              await supabase
+                .from('videos')
+                .update({
+                  status: 'completed',
+                  video_url: data.video_url,
+                  completed_at: new Date().toISOString()
+                })
+                .eq('luma_id', video.id);
+            } else if (data.status === 'failed') {
+              await supabase
+                .from('videos')
+                .update({
+                  status: 'failed',
+                  error_message: data.error
+                })
+                .eq('luma_id', video.id);
+            }
           }
         } catch (err) {
           console.error(`Failed to poll video ${video.id}:`, err);
@@ -63,13 +83,27 @@ export default function BatchVideoResults({ videos, onClose }: BatchVideoResults
   const failedCount = batchVideos.filter(v => v.status === 'failed').length;
   const processingCount = batchVideos.filter(v => v.status === 'processing' || v.status === 'queued').length;
 
+  const downloadVideo = async (videoUrl: string, videoId: string) => {
+    try {
+      const response = await fetch(videoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `video-${videoId}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+    }
+  };
+
   const downloadAll = () => {
     batchVideos.forEach(video => {
       if (video.videoUrl) {
-        const link = document.createElement('a');
-        link.href = video.videoUrl;
-        link.download = `video-${video.id}.mp4`;
-        link.click();
+        downloadVideo(video.videoUrl, video.id);
       }
     });
   };
@@ -135,6 +169,15 @@ export default function BatchVideoResults({ videos, onClose }: BatchVideoResults
                 {video.error && (
                   <p className="batch-video-error">{video.error}</p>
                 )}
+                {video.videoUrl && (
+                  <button
+                    onClick={() => downloadVideo(video.videoUrl!, video.id)}
+                    className="batch-download-btn"
+                  >
+                    <Download size={14} />
+                    Download
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -148,18 +191,23 @@ export default function BatchVideoResults({ videos, onClose }: BatchVideoResults
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.9);
+          background: rgba(0, 0, 0, 0.95);
           z-index: 1000;
           overflow-y: auto;
-          padding: 20px;
+          padding: 16px;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
         }
 
         .batch-results-container {
-          max-width: 1400px;
-          margin: 0 auto;
+          width: 100%;
+          max-width: 1600px;
           background: #1a1a1a;
           border-radius: 16px;
-          padding: 24px;
+          padding: 32px;
+          margin: auto;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
         .batch-results-header {
@@ -216,8 +264,11 @@ export default function BatchVideoResults({ videos, onClose }: BatchVideoResults
 
         .batch-video-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 20px;
+          grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+          gap: 24px;
+          max-height: calc(100vh - 200px);
+          overflow-y: auto;
+          padding: 8px;
         }
 
         .batch-video-card {
@@ -225,6 +276,13 @@ export default function BatchVideoResults({ videos, onClose }: BatchVideoResults
           border-radius: 12px;
           overflow: hidden;
           border: 1px solid #333;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .batch-video-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+          border-color: #444;
         }
 
         .batch-video-header {
@@ -307,6 +365,26 @@ export default function BatchVideoResults({ videos, onClose }: BatchVideoResults
           margin: 8px 0 0 0;
         }
 
+        .batch-download-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          background: #3b82f6;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          margin-top: 8px;
+          transition: background 0.2s;
+        }
+
+        .batch-download-btn:hover {
+          background: #2563eb;
+        }
+
         .spinning {
           animation: spin 1s linear infinite;
         }
@@ -316,9 +394,24 @@ export default function BatchVideoResults({ videos, onClose }: BatchVideoResults
           to { transform: rotate(360deg); }
         }
 
+        @media (max-width: 1400px) {
+          .batch-video-grid {
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          }
+        }
+
         @media (max-width: 768px) {
+          .batch-results-overlay {
+            padding: 8px;
+          }
+
+          .batch-results-container {
+            padding: 16px;
+          }
+
           .batch-video-grid {
             grid-template-columns: 1fr;
+            gap: 16px;
           }
 
           .batch-results-header {
