@@ -1,17 +1,19 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { Volume2, Sparkles, Wand2 } from 'lucide-react';
+import { Volume2, Sparkles, Wand2, Copy } from 'lucide-react';
 import UploadImage from './UploadImage';
 import PromptTemplates from './PromptTemplates';
 import { generateAudioFromText } from '@/lib/generateAudio';
 import { enhancePromptWithImage, validatePrompt, optimizeForCharacterAnimation } from '@/lib/promptEnhancer';
+import { generateBatchVariations } from '@/lib/batchGenerator';
 
 interface PromptFormProps {
   onSubmit: (videoId: string, prompt: string, imageUrl?: string, duration?: string, dialogue?: string, audioUrl?: string, voiceStyle?: string) => void;
+  onBatchSubmit?: (videos: Array<{ id: string; prompt: string }>) => void;
 }
 
-export default function PromptForm({ onSubmit }: PromptFormProps) {
+export default function PromptForm({ onSubmit, onBatchSubmit }: PromptFormProps) {
   const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [duration, setDuration] = useState<string>('5s');
@@ -21,6 +23,8 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoEnhance, setAutoEnhance] = useState(true);
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchCount, setBatchCount] = useState(10);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -35,63 +39,115 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
     setError(null);
 
     try {
-      let audioUrl: string | null = null;
-
-      if (dialogue.trim()) {
-        audioUrl = await generateAudioFromText(dialogue, voiceStyle);
+      if (batchMode && batchCount > 1) {
+        await handleBatchSubmit();
+      } else {
+        await handleSingleSubmit();
       }
-
-      let finalPrompt = prompt.trim();
-      if (autoEnhance && imageUrl.trim()) {
-        finalPrompt = enhancePromptWithImage(finalPrompt, true);
-        finalPrompt = optimizeForCharacterAnimation(finalPrompt, 'moderate');
-        console.log('[PROMPT ENHANCED]', { original: prompt, enhanced: finalPrompt });
-      }
-
-      const response = await fetch('/api/luma/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-        cache: 'no-store',
-        body: JSON.stringify({
-          prompt: finalPrompt,
-          imageUrl: imageUrl.trim() || undefined,
-          duration,
-        }),
-      });
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Invalid response from server. Please check your configuration.');
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create video');
-      }
-
-      onSubmit(
-        data.id,
-        prompt.trim(),
-        imageUrl.trim() || undefined,
-        duration,
-        dialogue.trim() || undefined,
-        audioUrl || undefined,
-        voiceStyle
-      );
-      setPrompt('');
-      setImageUrl('');
-      setDialogue('');
-      setDuration('5s');
-      setShowAudioOptions(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSingleSubmit = async () => {
+    let audioUrl: string | null = null;
+
+    if (dialogue.trim()) {
+      audioUrl = await generateAudioFromText(dialogue, voiceStyle);
+    }
+
+    let finalPrompt = prompt.trim();
+    if (autoEnhance && imageUrl.trim()) {
+      finalPrompt = enhancePromptWithImage(finalPrompt, true);
+      finalPrompt = optimizeForCharacterAnimation(finalPrompt, 'moderate');
+      console.log('[PROMPT ENHANCED]', { original: prompt, enhanced: finalPrompt });
+    }
+
+    const response = await fetch('/api/luma/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+      },
+      cache: 'no-store',
+      body: JSON.stringify({
+        prompt: finalPrompt,
+        imageUrl: imageUrl.trim() || undefined,
+        duration,
+      }),
+    });
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('Invalid response from server. Please check your configuration.');
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create video');
+    }
+
+    onSubmit(
+      data.id,
+      prompt.trim(),
+      imageUrl.trim() || undefined,
+      duration,
+      dialogue.trim() || undefined,
+      audioUrl || undefined,
+      voiceStyle
+    );
+    setPrompt('');
+    setImageUrl('');
+    setDialogue('');
+    setDuration('5s');
+    setShowAudioOptions(false);
+    setBatchMode(false);
+  };
+
+  const handleBatchSubmit = async () => {
+    const variations = generateBatchVariations(prompt.trim(), batchCount);
+    const results: Array<{ id: string; prompt: string }> = [];
+
+    const batchPromises = variations.map(async (variation) => {
+      try {
+        const response = await fetch('/api/luma/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+          cache: 'no-store',
+          body: JSON.stringify({
+            prompt: variation.prompt,
+            duration,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          results.push({ id: data.id, prompt: variation.prompt });
+        }
+      } catch (err) {
+        console.error(`Failed to create variation ${variation.variation}:`, err);
+      }
+    });
+
+    await Promise.all(batchPromises);
+
+    if (results.length === 0) {
+      throw new Error('Failed to create any videos in the batch');
+    }
+
+    if (onBatchSubmit) {
+      onBatchSubmit(results);
+    }
+
+    setPrompt('');
+    setBatchMode(false);
   };
 
   return (
@@ -259,10 +315,49 @@ export default function PromptForm({ onSubmit }: PromptFormProps) {
         </div>
       </div>
 
+      {!imageUrl && !dialogue && (
+        <div className="form-group">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="checkbox"
+              id="batchMode"
+              checked={batchMode}
+              onChange={(e) => setBatchMode(e.target.checked)}
+              disabled={loading}
+              style={{ width: 'auto', margin: 0 }}
+            />
+            <Copy size={16} />
+            Batch Generation Mode
+          </label>
+          <p className="input-hint">
+            Generate multiple unique video variations at once (up to 50 videos)
+          </p>
+
+          {batchMode && (
+            <div style={{ marginTop: '12px' }}>
+              <label htmlFor="batchCount">Number of Videos</label>
+              <input
+                id="batchCount"
+                type="number"
+                min="1"
+                max="50"
+                value={batchCount}
+                onChange={(e) => setBatchCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                disabled={loading}
+                style={{ marginTop: '8px' }}
+              />
+              <p className="input-hint" style={{ marginTop: '8px' }}>
+                Generate {batchCount} unique variations based on your prompt
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {error && <div className="error-message">{error}</div>}
 
       <button type="submit" disabled={loading} className="submit-button">
-        {loading ? 'Creating...' : 'Generate Video'}
+        {loading ? (batchMode ? `Creating ${batchCount} Videos...` : 'Creating...') : (batchMode ? `Generate ${batchCount} Videos` : 'Generate Video')}
       </button>
 
       <p className="pro-tip">

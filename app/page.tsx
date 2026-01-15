@@ -7,6 +7,7 @@ import VideoGallery from '@/components/VideoGallery';
 import { GenerationMode } from '@/components/GenerationModeSelector';
 import Navigation from '@/components/Navigation';
 import VideoGalleryView from '@/components/VideoGalleryView';
+import BatchVideoResults from '@/components/BatchVideoResults';
 import { supabase, VideoRecord } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { History, Plus } from 'lucide-react';
@@ -29,6 +30,7 @@ export default function Home() {
   const [pollingError, setPollingError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'home' | 'gallery'>('home');
   const [showGallery, setShowGallery] = useState(false);
+  const [batchVideos, setBatchVideos] = useState<Array<{ id: string; prompt: string }> | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -153,7 +155,29 @@ export default function Home() {
     setVideoState(null);
     setPollingError(null);
     setShowGallery(false);
+    setBatchVideos(null);
     localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const handleBatchSubmit = async (videos: Array<{ id: string; prompt: string }>) => {
+    setBatchVideos(videos);
+
+    if (user) {
+      try {
+        const videoRecords = videos.map(video => ({
+          user_id: user.id,
+          luma_id: video.id,
+          prompt: video.prompt,
+          duration: '5s',
+          status: 'queued' as const,
+          generation_mode: 'luma' as const,
+        }));
+
+        await supabase.from('videos').insert(videoRecords);
+      } catch (err) {
+        console.error('Failed to save batch videos to database:', err);
+      }
+    }
   };
 
   const handleSelectVideo = (video: VideoRecord) => {
@@ -194,11 +218,15 @@ export default function Home() {
             </header>
 
             <main className="main">
-              {!videoState && !showGallery && (
-                <UnifiedCommandPrompt onSubmit={handleVideoCreated} />
+              {!videoState && !showGallery && !batchVideos && (
+                <UnifiedCommandPrompt onSubmit={handleVideoCreated} onBatchSubmit={handleBatchSubmit} />
               )}
 
-              {!videoState && showGallery && <VideoGallery onSelectVideo={handleSelectVideo} />}
+              {!videoState && showGallery && !batchVideos && <VideoGallery onSelectVideo={handleSelectVideo} />}
+
+              {batchVideos && (
+                <BatchVideoResults videos={batchVideos} onClose={handleReset} />
+              )}
 
               {videoState && videoState.status !== 'completed' && (
                 <div className="progress-area">
