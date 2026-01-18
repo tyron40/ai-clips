@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Trophy, TrendingUp, Target, Zap, Heart, DollarSign, Rocket, Brain, Users, Award, Clock, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -88,85 +88,137 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
   };
 
   const motivationalThemes = [
-    'Success and Achievement',
-    'Overcoming Adversity',
-    'Personal Growth',
-    'Entrepreneurship',
-    'Fitness and Health',
-    'Financial Freedom',
-    'Dream Pursuit',
-    'Self-Discipline',
-    'Leadership',
-    'Mindset and Positivity'
+    { name: 'Success and Achievement', icon: Trophy, color: 'from-amber-500 to-orange-500' },
+    { name: 'Overcoming Adversity', icon: Target, color: 'from-red-500 to-pink-500' },
+    { name: 'Personal Growth', icon: TrendingUp, color: 'from-green-500 to-emerald-500' },
+    { name: 'Entrepreneurship', icon: Rocket, color: 'from-blue-500 to-cyan-500' },
+    { name: 'Fitness and Health', icon: Heart, color: 'from-rose-500 to-red-500' },
+    { name: 'Financial Freedom', icon: DollarSign, color: 'from-emerald-500 to-teal-500' },
+    { name: 'Dream Pursuit', icon: Sparkles, color: 'from-yellow-500 to-amber-500' },
+    { name: 'Self-Discipline', icon: Zap, color: 'from-orange-500 to-red-500' },
+    { name: 'Leadership', icon: Users, color: 'from-blue-600 to-indigo-600' },
+    { name: 'Mindset and Positivity', icon: Brain, color: 'from-teal-500 to-cyan-500' }
   ];
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="theme">Motivational Theme</Label>
+      <div className="space-y-8">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 p-8 text-white shadow-2xl">
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white/10 blur-2xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-8 -ml-8 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+          <div className="relative space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-white/20 p-3 backdrop-blur-sm">
+                <Film className="h-8 w-8" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold">Motivational Video Creator</h2>
+                <p className="text-white/90 text-sm">Create powerful multi-clip videos that inspire action</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Label htmlFor="theme" className="text-base font-semibold flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-orange-500" />
+            Your Motivational Message
+          </Label>
           <Textarea
             id="theme"
             placeholder="Describe the theme or message of your motivational video (e.g., 'overcoming challenges and achieving success through persistence and hard work')"
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
-            className="min-h-[100px]"
+            className="min-h-[120px] text-base border-2 focus:border-orange-500 transition-colors"
           />
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+            <Target className="w-3.5 h-3.5" />
             Be specific about the message, tone, and visual style you want
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label>Quick Themes</Label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {motivationalThemes.map((quickTheme) => (
-              <Button
-                key={quickTheme}
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(`Create a hyperrealistic motivational video about ${quickTheme.toLowerCase()}, showing powerful scenes that inspire action`)}
-                className="justify-start text-left h-auto py-2 px-3"
-              >
-                {quickTheme}
-              </Button>
-            ))}
+        <div className="space-y-4">
+          <Label className="text-base font-semibold flex items-center gap-2">
+            <Award className="w-4 h-4 text-orange-500" />
+            Quick Theme Presets
+          </Label>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {motivationalThemes.map((quickTheme) => {
+              const Icon = quickTheme.icon;
+              return (
+                <button
+                  key={quickTheme.name}
+                  onClick={() => setTheme(`Create a hyperrealistic motivational video about ${quickTheme.name.toLowerCase()}, showing powerful scenes that inspire action`)}
+                  className="group relative overflow-hidden rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-left transition-all hover:border-transparent hover:scale-105 hover:shadow-xl"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${quickTheme.color} opacity-0 group-hover:opacity-100 transition-opacity`}></div>
+                  <div className="relative space-y-2">
+                    <div className={`inline-flex rounded-lg bg-gradient-to-br ${quickTheme.color} p-2 text-white shadow-lg`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <p className="text-sm font-semibold group-hover:text-white transition-colors">
+                      {quickTheme.name}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="duration">Target Duration</Label>
+        <div className="space-y-3">
+          <Label htmlFor="duration" className="text-base font-semibold flex items-center gap-2">
+            <Clock className="w-4 h-4 text-orange-500" />
+            Video Duration
+          </Label>
           <Select value={duration} onValueChange={setDuration}>
-            <SelectTrigger id="duration">
+            <SelectTrigger id="duration" className="h-12 text-base border-2 focus:border-orange-500">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="10">10 seconds (1 clip)</SelectItem>
-              <SelectItem value="30">30 seconds (3 clips)</SelectItem>
-              <SelectItem value="60">1 minute (6 clips)</SelectItem>
-              <SelectItem value="90">1.5 minutes (9 clips)</SelectItem>
-              <SelectItem value="120">2 minutes (12 clips)</SelectItem>
-              <SelectItem value="150">2.5 minutes (15 clips)</SelectItem>
-              <SelectItem value="180">3 minutes (18 clips)</SelectItem>
+              <SelectItem value="10" className="text-base">10 seconds (1 clip)</SelectItem>
+              <SelectItem value="30" className="text-base">30 seconds (3 clips)</SelectItem>
+              <SelectItem value="60" className="text-base">1 minute (6 clips)</SelectItem>
+              <SelectItem value="90" className="text-base">1.5 minutes (9 clips)</SelectItem>
+              <SelectItem value="120" className="text-base">2 minutes (12 clips)</SelectItem>
+              <SelectItem value="150" className="text-base">2.5 minutes (15 clips)</SelectItem>
+              <SelectItem value="180" className="text-base">3 minutes (18 clips)</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-sm text-muted-foreground">
-            Each clip is 10 seconds. Your video will have {Math.ceil(parseInt(duration) / 10)} diverse scenes.
-          </p>
+          <div className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 p-3 border border-orange-200 dark:border-orange-800">
+            <Film className="w-4 h-4 text-orange-600 flex-shrink-0" />
+            <p className="text-sm text-orange-900 dark:text-orange-100">
+              Your video will have <span className="font-bold">{Math.ceil(parseInt(duration) / 10)} diverse scenes</span> at 10 seconds each
+            </p>
+          </div>
         </div>
 
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 space-y-2">
-          <div className="flex items-start gap-2">
-            <Sparkles className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-            <div className="space-y-1 text-sm">
-              <p className="font-medium text-blue-500">How It Works</p>
-              <ul className="text-muted-foreground space-y-1 ml-4 list-disc">
-                <li>Multiple hyperrealistic 10-second clips will be generated in sequence</li>
-                <li>Each clip features different motivational scenes based on your theme</li>
-                <li>All clips will be automatically downloaded and ready to combine</li>
-                <li>You'll receive FFmpeg commands or can use any video editor to combine them</li>
-                <li>Perfect for creating YouTube motivational content</li>
-              </ul>
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-2 border-blue-200 dark:border-blue-800 p-6">
+          <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-blue-400/10 blur-2xl"></div>
+          <div className="relative flex items-start gap-4">
+            <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-3 text-white shadow-lg">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div className="space-y-3 flex-1">
+              <p className="font-bold text-lg text-blue-900 dark:text-blue-100">How It Works</p>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="flex items-start gap-2">
+                  <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0"></div>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">Multiple hyperrealistic 10-second clips generated in sequence</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0"></div>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">Each clip features different motivational scenes</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0"></div>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">Download all clips with one click</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0"></div>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">Combine with provided FFmpeg commands</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -174,17 +226,17 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
         <Button
           onClick={handleGenerate}
           disabled={!theme.trim() || isGenerating}
-          className="w-full"
+          className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all"
           size="lg"
         >
           {isGenerating ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               Generating {Math.ceil(parseInt(duration) / 10)} Clips...
             </>
           ) : (
             <>
-              <Sparkles className="mr-2 h-4 w-4" />
+              <Sparkles className="mr-2 h-5 w-5" />
               Generate {getDurationLabel(duration)} Motivational Video
             </>
           )}
