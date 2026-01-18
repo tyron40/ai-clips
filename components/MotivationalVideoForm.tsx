@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { generateMotivationalPrompts } from '@/lib/motivationalPromptGenerator';
-import BatchVideoResults from './BatchVideoResults';
+import MotivationalVideoCombiner from './MotivationalVideoCombiner';
 import { supabase } from '@/lib/supabase';
 
 interface MotivationalVideoFormProps {
@@ -161,9 +161,10 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
             <div className="space-y-1 text-sm">
               <p className="font-medium text-blue-500">How It Works</p>
               <ul className="text-muted-foreground space-y-1 ml-4 list-disc">
-                <li>Multiple hyperrealistic 10-second clips will be generated</li>
+                <li>Multiple hyperrealistic 10-second clips will be generated in sequence</li>
                 <li>Each clip features different motivational scenes based on your theme</li>
-                <li>Download all clips and combine them for your final video</li>
+                <li>All clips will be automatically downloaded and ready to combine</li>
+                <li>You'll receive FFmpeg commands or can use any video editor to combine them</li>
                 <li>Perfect for creating YouTube motivational content</li>
               </ul>
             </div>
@@ -191,9 +192,14 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
       </div>
 
       {showBatchResults && (
-        <BatchVideoResults
+        <MotivationalVideoCombiner
           videos={batchVideos}
-          onClose={() => setShowBatchResults(false)}
+          onClose={() => {
+            setShowBatchResults(false);
+            setTheme('');
+          }}
+          targetDuration={duration}
+          theme={theme}
         />
       )}
     </>
