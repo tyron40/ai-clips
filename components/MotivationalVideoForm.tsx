@@ -23,6 +23,9 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState<string | null>(null);
   const [failedClips, setFailedClips] = useState<number>(0);
+  const [rateLimitStatus, setRateLimitStatus] = useState<string | null>(null);
+
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   const getDurationLabel = (seconds: string) => {
     const s = parseInt(seconds);
@@ -33,12 +36,44 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
     return `${minutes}m ${remainingSeconds}s`;
   };
 
+  const fetchWithRetry = async (url: string, options: RequestInit, maxRetries = 3): Promise<Response> => {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const response = await fetch(url, options);
+
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, attempt) * 2000;
+
+          setRateLimitStatus(`Rate limited. Waiting ${Math.ceil(waitTime / 1000)} seconds before retry ${attempt + 1}/${maxRetries}...`);
+          await sleep(waitTime);
+          continue;
+        }
+
+        setRateLimitStatus(null);
+        return response;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        if (attempt < maxRetries - 1) {
+          const waitTime = Math.pow(2, attempt) * 1000;
+          setRateLimitStatus(`Network error. Retrying in ${waitTime / 1000} seconds...`);
+          await sleep(waitTime);
+        }
+      }
+    }
+
+    throw lastError || new Error('Max retries exceeded');
+  };
+
   const handleGenerate = async () => {
     if (!theme.trim()) return;
 
     setIsGenerating(true);
     setError(null);
     setFailedClips(0);
+    setRateLimitStatus(null);
 
     try {
       const targetDuration = parseInt(duration);
@@ -59,7 +94,7 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
         try {
           const { data: { user } } = await supabase.auth.getUser();
 
-          const response = await fetch('/api/luma/create', {
+          const response = await fetchWithRetry('/api/luma/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -75,6 +110,10 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
             console.error(`Failed to generate clip ${i + 1}:`, errorData);
             failed++;
             setFailedClips(failed);
+
+            if (i < prompts.length - 1) {
+              await sleep(3000);
+            }
             continue;
           }
 
@@ -108,10 +147,20 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
 
           generatedVideos.push(newVideo);
           setBatchVideos([...generatedVideos]);
+
+          if (i < prompts.length - 1) {
+            setRateLimitStatus('Waiting 2 seconds before next request to avoid rate limits...');
+            await sleep(2000);
+            setRateLimitStatus(null);
+          }
         } catch (clipError) {
           console.error(`Error generating clip ${i + 1}:`, clipError);
           failed++;
           setFailedClips(failed);
+
+          if (i < prompts.length - 1) {
+            await sleep(3000);
+          }
         }
       }
 
@@ -128,6 +177,7 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
     } finally {
       setIsGenerating(false);
       setGenerationProgress({ current: 0, total: 0 });
+      setRateLimitStatus(null);
     }
   };
 
@@ -294,7 +344,27 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
             <div className="flex items-start gap-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-3 border border-amber-200 dark:border-amber-800">
               <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-amber-900 dark:text-amber-100">
-                <span className="font-semibold">Please Note:</span> Generating {Math.ceil(parseInt(duration) / 10)} clips will take approximately {Math.ceil(parseInt(duration) / 10) * 3}-{Math.ceil(parseInt(duration) / 10) * 5} minutes. Each clip is created individually and then you can combine them.
+                <span className="font-semibold">Please Note:</span> Generating {Math.ceil(parseInt(duration) / 10)} clips will take approximately {Math.ceil(parseInt(duration) / 10) * 3}-{Math.ceil(parseInt(duration) / 10) * 5} minutes. Each clip is created individually with a 2-second delay between requests to respect API rate limits.
+              </p>
+            </div>
+          )}
+
+          {parseInt(duration) < 60 && parseInt(duration) > 10 && (
+            <div className="flex items-start gap-2 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 p-3 border border-blue-200 dark:border-blue-800">
+              <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                Clips are submitted with a 2-second delay between each to prevent rate limiting. If rate limits are hit, the system will automatically retry.
+              </p>
+            </div>
+          )}
+
+          {rateLimitStatus && (
+            <div className="flex items-start gap-2 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 p-3 border border-blue-300 dark:border-blue-700">
+              <Loader2 className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5 animate-spin" />
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                {rateLimitStatus}
               </p>
             </div>
           )}
@@ -319,7 +389,7 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
             {isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Submitting Clip {generationProgress.current} of {generationProgress.total}...
+                {rateLimitStatus ? rateLimitStatus : `Submitting Clip ${generationProgress.current} of ${generationProgress.total}...`}
               </>
             ) : (
               <>
