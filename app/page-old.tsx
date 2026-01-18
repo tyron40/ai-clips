@@ -11,6 +11,7 @@ import MultiImageForm from '@/components/MultiImageForm';
 import HuggingPeopleForm from '@/components/HuggingPeopleForm';
 import ImageMotionForm from '@/components/ImageMotionForm';
 import TalkingCharacterForm from '@/components/TalkingCharacterForm';
+import MotivationalVideoForm from '@/components/MotivationalVideoForm';
 import { supabase, VideoRecord } from '@/lib/supabase';
 import { History, Plus } from 'lucide-react';
 
@@ -240,6 +241,10 @@ export default function Home() {
                     handleVideoCreated(id, prompt, imageUrl, '5s', 'talking-character', undefined, undefined, undefined, undefined, dialogue, audioUrl)
                   }
                 />
+              )}
+
+              {generationMode === 'motivational' && (
+                <MotivationalVideoForm />
               )}
             </div>
           </>

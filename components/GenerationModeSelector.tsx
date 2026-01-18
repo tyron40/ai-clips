@@ -1,8 +1,8 @@
 'use client';
 
-import { Film, Image as ImageIcon, Sparkles, Clapperboard, Users, Wand2, MessageSquare } from 'lucide-react';
+import { Film, Image as ImageIcon, Sparkles, Clapperboard, Users, Wand2, MessageSquare, Zap } from 'lucide-react';
 
-export type GenerationMode = 'luma' | 'huggingface' | 'movie-scene' | 'multi-image' | 'hugging-people' | 'image-motion' | 'talking-character';
+export type GenerationMode = 'luma' | 'huggingface' | 'movie-scene' | 'multi-image' | 'hugging-people' | 'image-motion' | 'talking-character' | 'motivational';
 
 interface ModeOption {
   id: GenerationMode;
@@ -57,6 +57,13 @@ const modes: ModeOption[] = [
     description: 'Put any image in natural motion',
     icon: Wand2,
     badge: 'Popular'
+  },
+  {
+    id: 'motivational',
+    title: 'Motivational Video',
+    description: 'Create 3-minute motivational videos from multiple clips',
+    icon: Zap,
+    badge: 'New'
   }
 ];
 
