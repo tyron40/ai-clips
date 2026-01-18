@@ -21,6 +21,8 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
   const [showBatchResults, setShowBatchResults] = useState(false);
   const [batchVideos, setBatchVideos] = useState<Array<{ id: string; prompt: string }>>([]);
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
+  const [error, setError] = useState<string | null>(null);
+  const [failedClips, setFailedClips] = useState<number>(0);
 
   const getDurationLabel = (seconds: string) => {
     const s = parseInt(seconds);
@@ -35,6 +37,9 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
     if (!theme.trim()) return;
 
     setIsGenerating(true);
+    setError(null);
+    setFailedClips(0);
+
     try {
       const targetDuration = parseInt(duration);
       const numberOfClips = Math.ceil(targetDuration / 10);
@@ -45,50 +50,81 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
       setShowBatchResults(true);
 
       const generatedVideos: Array<{ id: string; prompt: string }> = [];
+      let failed = 0;
 
       for (let i = 0; i < prompts.length; i++) {
         const prompt = prompts[i];
         setGenerationProgress({ current: i + 1, total: numberOfClips });
 
-        const { data: { user } } = await supabase.auth.getUser();
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
 
-        const response = await fetch('/api/luma/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: prompt,
-            aspect_ratio: '16:9',
-            loop: false,
-            keyframes: undefined,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to generate video');
-        }
-
-        const data = await response.json();
-
-        if (user) {
-          await supabase.from('videos').insert({
-            user_id: user.id,
-            prompt: prompt,
-            luma_id: data.id,
-            status: 'processing',
-            generation_mode: 'motivational',
+          const response = await fetch('/api/luma/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: prompt,
+              aspect_ratio: '16:9',
+              loop: false,
+              keyframes: undefined,
+            }),
           });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error(`Failed to generate clip ${i + 1}:`, errorData);
+            failed++;
+            setFailedClips(failed);
+            continue;
+          }
+
+          const data = await response.json();
+
+          if (!data.id) {
+            console.error(`No ID returned for clip ${i + 1}`);
+            failed++;
+            setFailedClips(failed);
+            continue;
+          }
+
+          if (user) {
+            try {
+              await supabase.from('videos').insert({
+                user_id: user.id,
+                prompt: prompt,
+                luma_id: data.id,
+                status: 'processing',
+                generation_mode: 'motivational',
+              });
+            } catch (dbError) {
+              console.error(`Failed to save clip ${i + 1} to database:`, dbError);
+            }
+          }
+
+          const newVideo = {
+            id: data.id,
+            prompt: prompt,
+          };
+
+          generatedVideos.push(newVideo);
+          setBatchVideos([...generatedVideos]);
+        } catch (clipError) {
+          console.error(`Error generating clip ${i + 1}:`, clipError);
+          failed++;
+          setFailedClips(failed);
         }
+      }
 
-        const newVideo = {
-          id: data.id,
-          prompt: prompt,
-        };
-
-        generatedVideos.push(newVideo);
-        setBatchVideos([...generatedVideos]);
+      if (generatedVideos.length === 0) {
+        setError('Failed to generate any video clips. Please check your API configuration and try again.');
+        setShowBatchResults(false);
+      } else if (failed > 0) {
+        setError(`Successfully submitted ${generatedVideos.length} clips, but ${failed} clip${failed > 1 ? 's' : ''} failed. The successful clips will still be generated.`);
       }
     } catch (error) {
       console.error('Failed to generate motivational video:', error);
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.');
+      setShowBatchResults(false);
     } finally {
       setIsGenerating(false);
       setGenerationProgress({ current: 0, total: 0 });
@@ -232,6 +268,28 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
         </div>
 
         <div className="space-y-3">
+          {error && (
+            <div className="flex items-start gap-2 rounded-lg bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 p-4 border-2 border-red-300 dark:border-red-700">
+              <div className="rounded-full bg-red-100 dark:bg-red-900/50 p-1 flex-shrink-0 mt-0.5">
+                <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">Error</p>
+                <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+
           {parseInt(duration) >= 60 && (
             <div className="flex items-start gap-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-3 border border-amber-200 dark:border-amber-800">
               <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -241,10 +299,21 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
             </div>
           )}
 
+          {isGenerating && failedClips > 0 && (
+            <div className="flex items-start gap-2 rounded-lg bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 p-3 border border-orange-300 dark:border-orange-700">
+              <svg className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className="text-sm text-orange-900 dark:text-orange-100">
+                <span className="font-semibold">Warning:</span> {failedClips} clip{failedClips > 1 ? 's' : ''} failed to submit. Continuing with remaining clips...
+              </p>
+            </div>
+          )}
+
           <Button
             onClick={handleGenerate}
             disabled={!theme.trim() || isGenerating}
-            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all"
+            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             size="lg"
           >
             {isGenerating ? (

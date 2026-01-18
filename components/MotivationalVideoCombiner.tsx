@@ -10,6 +10,7 @@ interface VideoClip {
   prompt: string;
   videoUrl?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
+  error?: string;
 }
 
 interface MotivationalVideoCombinerProps {
@@ -41,6 +42,19 @@ export default function MotivationalVideoCombiner({
         if (clip.status === 'processing' || clip.status === 'pending') {
           try {
             const response = await fetch(`/api/luma/status?id=${clip.id}`);
+
+            if (!response.ok) {
+              const errorText = await response.text().catch(() => 'Unknown error');
+              console.error(`Failed to check status for clip ${clip.id}:`, errorText);
+              updatedClips[i] = {
+                ...clip,
+                status: 'failed',
+                error: `Status check failed: ${response.status} ${response.statusText}`,
+              };
+              hasChanges = true;
+              continue;
+            }
+
             const data = await response.json();
 
             if (data.status === 'completed' && data.video_url) {
@@ -51,11 +65,21 @@ export default function MotivationalVideoCombiner({
               };
               hasChanges = true;
             } else if (data.status === 'failed') {
-              updatedClips[i] = { ...clip, status: 'failed' };
+              updatedClips[i] = {
+                ...clip,
+                status: 'failed',
+                error: data.error || 'Video generation failed',
+              };
               hasChanges = true;
             }
           } catch (err) {
             console.error(`Failed to poll video ${clip.id}:`, err);
+            updatedClips[i] = {
+              ...clip,
+              status: 'failed',
+              error: err instanceof Error ? err.message : 'Failed to check video status',
+            };
+            hasChanges = true;
           }
         }
       }
@@ -80,6 +104,7 @@ export default function MotivationalVideoCombiner({
 
   const completedClips = clips.filter(c => c.status === 'completed');
   const processingCount = clips.filter(c => c.status === 'processing' || c.status === 'pending').length;
+  const failedClips = clips.filter(c => c.status === 'failed');
 
   const handleDownloadAll = async () => {
     setDownloadingAll(true);
@@ -165,7 +190,30 @@ export default function MotivationalVideoCombiner({
             </div>
           </div>
 
-          {allComplete && (
+          {failedClips.length > 0 && (
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border-2 border-red-200 dark:border-red-800 p-5">
+              <div className="absolute top-0 right-0 h-24 w-24 rounded-full bg-red-400/10 blur-2xl"></div>
+              <div className="relative flex items-start gap-3">
+                <div className="rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2.5 text-white shadow-lg flex-shrink-0">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-red-900 dark:text-red-100">
+                    {failedClips.length} Clip{failedClips.length > 1 ? 's' : ''} Failed
+                  </h3>
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    {completedClips.length > 0
+                      ? `${completedClips.length} clip${completedClips.length > 1 ? 's' : ''} completed successfully. You can still use the completed clips.`
+                      : 'All clips failed to generate. Please check your API configuration and try again.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {allComplete && completedClips.length > 0 && (
             <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-2 border-green-200 dark:border-green-800 p-6">
               <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-green-400/10 blur-2xl"></div>
               <div className="relative space-y-4">
@@ -175,10 +223,12 @@ export default function MotivationalVideoCombiner({
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-green-900 dark:text-green-100">
-                      All Clips Generated Successfully!
+                      {failedClips.length > 0 ? 'Generation Complete with Errors' : 'All Clips Generated Successfully!'}
                     </h3>
                     <p className="text-sm text-green-700 dark:text-green-300">
-                      Your {completedClips.length} video clips are ready to download and combine
+                      {failedClips.length > 0
+                        ? `${completedClips.length} of ${clips.length} clips are ready to download and combine`
+                        : `Your ${completedClips.length} video clips are ready to download and combine`}
                     </p>
                   </div>
                 </div>
@@ -249,7 +299,16 @@ ffmpeg -f concat -safe 0 -i filelist.txt -c copy output.mp4
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {clips.map((clip, index) => (
-                <Card key={clip.id} className="overflow-hidden border-2 hover:border-orange-300 dark:hover:border-orange-700 transition-all hover:shadow-lg group">
+                <Card
+                  key={clip.id}
+                  className={`overflow-hidden border-2 transition-all hover:shadow-lg group ${
+                    clip.status === 'failed'
+                      ? 'border-red-300 dark:border-red-700 hover:border-red-400 dark:hover:border-red-600'
+                      : clip.status === 'completed'
+                      ? 'border-green-300 dark:border-green-700 hover:border-green-400 dark:hover:border-green-600'
+                      : 'hover:border-orange-300 dark:hover:border-orange-700'
+                  }`}
+                >
                   <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -268,6 +327,13 @@ ffmpeg -f concat -safe 0 -i filelist.txt -c copy output.mp4
                           <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
                         </div>
                       )}
+                      {clip.status === 'failed' && (
+                        <div className="rounded-full bg-red-100 dark:bg-red-900/50 p-1.5">
+                          <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
 
                     {clip.videoUrl ? (
@@ -277,6 +343,18 @@ ffmpeg -f concat -safe 0 -i filelist.txt -c copy output.mp4
                           controls
                           className="w-full rounded-lg aspect-video bg-black shadow-md"
                         />
+                      </div>
+                    ) : clip.status === 'failed' ? (
+                      <div className="w-full aspect-video bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/50 dark:to-rose-950/50 rounded-lg flex flex-col items-center justify-center gap-2 border-2 border-red-200 dark:border-red-800 p-4">
+                        <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-sm font-semibold text-red-900 dark:text-red-100">Failed</p>
+                        {clip.error && (
+                          <p className="text-xs text-center text-red-700 dark:text-red-300 line-clamp-2">
+                            {clip.error}
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <div className="w-full aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-lg flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700">
