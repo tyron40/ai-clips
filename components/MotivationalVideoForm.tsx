@@ -20,6 +20,7 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
   const [isGenerating, setIsGenerating] = useState(false);
   const [showBatchResults, setShowBatchResults] = useState(false);
   const [batchVideos, setBatchVideos] = useState<Array<{ id: string; prompt: string }>>([]);
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
 
   const getDurationLabel = (seconds: string) => {
     const s = parseInt(seconds);
@@ -40,9 +41,15 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
 
       const prompts = generateMotivationalPrompts(theme, numberOfClips);
 
+      setGenerationProgress({ current: 0, total: numberOfClips });
+      setShowBatchResults(true);
+
       const generatedVideos: Array<{ id: string; prompt: string }> = [];
 
-      for (const prompt of prompts) {
+      for (let i = 0; i < prompts.length; i++) {
+        const prompt = prompts[i];
+        setGenerationProgress({ current: i + 1, total: numberOfClips });
+
         const { data: { user } } = await supabase.auth.getUser();
 
         const response = await fetch('/api/luma/create', {
@@ -72,18 +79,19 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
           });
         }
 
-        generatedVideos.push({
+        const newVideo = {
           id: data.id,
           prompt: prompt,
-        });
-      }
+        };
 
-      setBatchVideos(generatedVideos);
-      setShowBatchResults(true);
+        generatedVideos.push(newVideo);
+        setBatchVideos([...generatedVideos]);
+      }
     } catch (error) {
       console.error('Failed to generate motivational video:', error);
     } finally {
       setIsGenerating(false);
+      setGenerationProgress({ current: 0, total: 0 });
     }
   };
 
@@ -223,24 +231,35 @@ export default function MotivationalVideoForm({ onVideoGenerated }: Motivational
           </div>
         </div>
 
-        <Button
-          onClick={handleGenerate}
-          disabled={!theme.trim() || isGenerating}
-          className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all"
-          size="lg"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Generating {Math.ceil(parseInt(duration) / 10)} Clips...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-5 w-5" />
-              Generate {getDurationLabel(duration)} Motivational Video
-            </>
+        <div className="space-y-3">
+          {parseInt(duration) >= 60 && (
+            <div className="flex items-start gap-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-3 border border-amber-200 dark:border-amber-800">
+              <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-900 dark:text-amber-100">
+                <span className="font-semibold">Please Note:</span> Generating {Math.ceil(parseInt(duration) / 10)} clips will take approximately {Math.ceil(parseInt(duration) / 10) * 3}-{Math.ceil(parseInt(duration) / 10) * 5} minutes. Each clip is created individually and then you can combine them.
+              </p>
+            </div>
           )}
-        </Button>
+
+          <Button
+            onClick={handleGenerate}
+            disabled={!theme.trim() || isGenerating}
+            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all"
+            size="lg"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Submitting Clip {generationProgress.current} of {generationProgress.total}...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-5 w-5" />
+                Generate {getDurationLabel(duration)} Motivational Video
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {showBatchResults && (
