@@ -151,9 +151,21 @@ export default function InfluencerProfileForm({ profileId, onSuccess, onCancel }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-lg border border-orange-200">
+        <div className="flex items-start gap-3">
+          <Sparkles className="w-5 h-5 text-orange-600 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-orange-900">Master Identity Blueprint</h3>
+            <p className="text-sm text-orange-700 mt-1">
+              Define every detail of your influencer&apos;s appearance and personality. This ensures perfect consistency across all generated content.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <Card className="border-2">
+        <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
+          <CardTitle className="flex items-center gap-2 text-orange-900">
             <Sparkles className="w-5 h-5" />
             Basic Information
           </CardTitle>
@@ -218,9 +230,9 @@ export default function InfluencerProfileForm({ profileId, onSuccess, onCancel }
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Physical Appearance</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
+          <CardTitle className="text-orange-900">Physical Appearance</CardTitle>
           <CardDescription>
             Define the exact look that will be consistent across all generated content
           </CardDescription>
@@ -310,9 +322,9 @@ export default function InfluencerProfileForm({ profileId, onSuccess, onCancel }
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Personality & Brand</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
+          <CardTitle className="text-orange-900">Personality & Brand</CardTitle>
           <CardDescription>
             Define the character and voice that makes your influencer unique
           </CardDescription>
@@ -340,9 +352,9 @@ export default function InfluencerProfileForm({ profileId, onSuccess, onCancel }
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Technical Settings</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
+          <CardTitle className="text-orange-900">Technical Settings</CardTitle>
           <CardDescription>
             Configure the visual consistency and reference image
           </CardDescription>
@@ -405,21 +417,21 @@ export default function InfluencerProfileForm({ profileId, onSuccess, onCancel }
         </CardContent>
       </Card>
 
-      <div className="flex gap-3 justify-end">
+      <div className="flex gap-3 justify-end sticky bottom-0 bg-white p-4 -mx-4 -mb-4 border-t shadow-lg">
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} size="lg">
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} size="lg" className="min-w-[180px]">
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
               Saving...
             </>
           ) : (
             <>
-              <Save className="w-4 h-4 mr-2" />
+              <Save className="w-5 h-5 mr-2" />
               {profileId ? 'Update Profile' : 'Create Profile'}
             </>
           )}

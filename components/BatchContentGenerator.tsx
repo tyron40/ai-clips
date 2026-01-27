@@ -185,137 +185,145 @@ export default function BatchContentGenerator() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Zap className="w-5 h-5" />
-          Batch Content Generator
-        </CardTitle>
-        <CardDescription>
-          Generate multiple videos at once using preset content themes
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Influencer Profile</label>
-            <Select value={selectedProfile} onValueChange={setSelectedProfile}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose profile" />
-              </SelectTrigger>
-              <SelectContent>
-                {profiles.map((profile) => (
-                  <SelectItem key={profile.id} value={profile.id}>
-                    {profile.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="space-y-6">
+      <Card className="border-2 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
+          <CardTitle className="flex items-center gap-2 text-orange-900 text-2xl">
+            <Zap className="w-6 h-6" />
+            Batch Content Generator
+          </CardTitle>
+          <CardDescription className="text-base">
+            Generate multiple videos at once using preset content themes
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <label className="text-base font-semibold">Influencer Profile</label>
+              <Select value={selectedProfile} onValueChange={setSelectedProfile}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder="Choose profile" />
+                </SelectTrigger>
+                <SelectContent>
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-base font-semibold">Content Preset</label>
+              <Select
+                value={selectedPreset}
+                onValueChange={(value) => setSelectedPreset(value as keyof typeof batchPresets)}
+              >
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="selfies">📸 Selfies (5 videos)</SelectItem>
+                  <SelectItem value="fitness">💪 Fitness (5 videos)</SelectItem>
+                  <SelectItem value="fashion">👗 Fashion (5 videos)</SelectItem>
+                  <SelectItem value="lifestyle">🌟 Lifestyle (5 videos)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Content Preset</label>
-            <Select
-              value={selectedPreset}
-              onValueChange={(value) => setSelectedPreset(value as keyof typeof batchPresets)}
+          <div className="flex gap-3">
+            <Button
+              onClick={generateBatchPrompts}
+              disabled={!selectedProfile || isGenerating}
+              variant="outline"
+              size="lg"
+              className="flex-1"
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="selfies">Selfies (5 videos)</SelectItem>
-                <SelectItem value="fitness">Fitness (5 videos)</SelectItem>
-                <SelectItem value="fashion">Fashion (5 videos)</SelectItem>
-                <SelectItem value="lifestyle">Lifestyle (5 videos)</SelectItem>
-              </SelectContent>
-            </Select>
+              Generate Prompts
+            </Button>
+            <Button
+              onClick={startBatchGeneration}
+              disabled={!selectedProfile || batchJobs.length === 0 || isGenerating}
+              size="lg"
+              className="flex-1"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-5 h-5 mr-2" />
+                  Start Batch Generation
+                </>
+              )}
+            </Button>
           </div>
-        </div>
 
-        <div className="flex gap-2">
-          <Button
-            onClick={generateBatchPrompts}
-            disabled={!selectedProfile || isGenerating}
-            variant="outline"
-            className="flex-1"
-          >
-            Generate Prompts
-          </Button>
-          <Button
-            onClick={startBatchGeneration}
-            disabled={!selectedProfile || batchJobs.length === 0 || isGenerating}
-            className="flex-1"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4 mr-2" />
-                Start Batch Generation
-              </>
-            )}
-          </Button>
-        </div>
-
-        {isGenerating && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Progress</span>
-              <span>{Math.round(getProgress())}%</span>
+          {isGenerating && (
+            <div className="space-y-3 bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-lg border-2 border-orange-200">
+              <div className="flex justify-between text-base font-semibold text-orange-900">
+                <span>Generation Progress</span>
+                <span>{Math.round(getProgress())}%</span>
+              </div>
+              <Progress value={getProgress()} className="h-3" />
+              <p className="text-sm text-orange-700">
+                Generating {batchJobs.filter(j => j.status === 'success' || j.status === 'error').length} of {batchJobs.length} videos
+              </p>
             </div>
-            <Progress value={getProgress()} />
-          </div>
-        )}
+          )}
 
-        {batchJobs.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Batch Jobs</h4>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {batchJobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="flex items-start gap-3 p-3 bg-muted rounded-lg text-sm"
-                >
-                  <div className="flex-shrink-0 mt-0.5">
-                    {job.status === 'pending' && (
-                      <div className="w-5 h-5 rounded-full border-2 border-muted-foreground" />
-                    )}
-                    {job.status === 'generating' && (
-                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-                    )}
-                    {job.status === 'success' && (
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    )}
-                    {job.status === 'error' && (
-                      <XCircle className="w-5 h-5 text-red-500" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate">{job.prompt}</p>
-                    {job.error && (
-                      <p className="text-xs text-red-500 mt-1">{job.error}</p>
-                    )}
-                  </div>
-                  <Badge
-                    variant={
-                      job.status === 'success'
-                        ? 'default'
-                        : job.status === 'error'
-                        ? 'destructive'
-                        : 'secondary'
-                    }
+          {batchJobs.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-base font-semibold">Batch Jobs</h4>
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                {batchJobs.map((job) => (
+                  <div
+                    key={job.id}
+                    className="flex items-start gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-gray-200 transition-all hover:shadow-md"
                   >
-                    {job.status}
-                  </Badge>
-                </div>
-              ))}
+                    <div className="flex-shrink-0 mt-0.5">
+                      {job.status === 'pending' && (
+                        <div className="w-6 h-6 rounded-full border-2 border-gray-400" />
+                      )}
+                      {job.status === 'generating' && (
+                        <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                      )}
+                      {job.status === 'success' && (
+                        <CheckCircle2 className="w-6 h-6 text-green-500" />
+                      )}
+                      {job.status === 'error' && (
+                        <XCircle className="w-6 h-6 text-red-500" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm leading-relaxed">{job.prompt}</p>
+                      {job.error && (
+                        <p className="text-xs text-red-600 mt-2 font-medium">{job.error}</p>
+                      )}
+                    </div>
+                    <Badge
+                      variant={
+                        job.status === 'success'
+                          ? 'default'
+                          : job.status === 'error'
+                          ? 'destructive'
+                          : 'secondary'
+                      }
+                      className="font-medium"
+                    >
+                      {job.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, User, Sparkles } from 'lucide-react';
+import { Plus, Edit, Trash2, User, Sparkles, Users } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -103,19 +103,19 @@ export default function InfluencerLibrary() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="w-6 h-6" />
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold flex items-center gap-3 bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent">
+            <Sparkles className="w-8 h-8 text-orange-600" />
             Your AI Influencers
           </h2>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground text-base">
             Create and manage consistent AI influencer characters
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="w-4 h-4 mr-2" />
+        <Button onClick={() => setShowCreateDialog(true)} size="lg" className="shadow-lg hover:shadow-xl transition-shadow">
+          <Plus className="w-5 h-5 mr-2" />
           Create New Influencer
         </Button>
       </div>
@@ -135,37 +135,45 @@ export default function InfluencerLibrary() {
           ))}
         </div>
       ) : profiles.length === 0 ? (
-        <Card className="text-center py-12">
-          <CardContent className="space-y-4">
-            <User className="w-16 h-16 mx-auto text-muted-foreground" />
-            <div>
-              <h3 className="text-lg font-semibold">No influencers yet</h3>
-              <p className="text-muted-foreground mt-2">
-                Create your first AI influencer to start generating consistent content
+        <Card className="border-2 border-dashed border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50">
+          <CardContent className="py-16 space-y-6">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-orange-400 rounded-full blur-2xl opacity-20 animate-pulse" />
+                <Users className="w-20 h-20 mx-auto text-orange-600 relative" />
+              </div>
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-bold text-gray-900">No influencers yet</h3>
+              <p className="text-muted-foreground max-w-md mx-auto text-base">
+                Create your first AI influencer to start generating consistent content with a unique personality and style
               </p>
             </div>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Your First Influencer
-            </Button>
+            <div className="flex justify-center">
+              <Button onClick={() => setShowCreateDialog(true)} size="lg" className="shadow-lg">
+                <Plus className="w-5 h-5 mr-2" />
+                Create Your First Influencer
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {profiles.map((profile) => (
-            <Card key={profile.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
+            <Card key={profile.id} className="group overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border-2">
+              <CardHeader className="pb-3 bg-gradient-to-br from-orange-50 to-amber-50">
                 <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{profile.name}</CardTitle>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-xl truncate">{profile.name}</CardTitle>
                     {profile.nickname && (
-                      <CardDescription>&quot;{profile.nickname}&quot;</CardDescription>
+                      <CardDescription className="text-sm">&quot;{profile.nickname}&quot;</CardDescription>
                     )}
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8 hover:bg-orange-100"
                       onClick={() => setEditingProfile(profile.id)}
                     >
                       <Edit className="w-4 h-4" />
@@ -173,33 +181,36 @@ export default function InfluencerLibrary() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8 hover:bg-red-100"
                       onClick={() => setDeletingProfile(profile.id)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 text-red-600" />
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4 pt-4">
                 {profile.base_image_url ? (
-                  <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                  <div className="aspect-square rounded-xl overflow-hidden bg-muted ring-2 ring-orange-100 group-hover:ring-orange-300 transition-all">
                     <img
                       src={profile.base_image_url}
                       alt={profile.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                 ) : (
-                  <div className="aspect-square rounded-lg bg-muted flex items-center justify-center">
-                    <User className="w-12 h-12 text-muted-foreground" />
+                  <div className="aspect-square rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center ring-2 ring-orange-200">
+                    <User className="w-16 h-16 text-orange-400" />
                   </div>
                 )}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {profile.niche && (
-                    <Badge variant="secondary">{profile.niche}</Badge>
+                    <Badge variant="secondary" className="font-medium">
+                      {profile.niche}
+                    </Badge>
                   )}
                   {profile.ethnicity && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground font-medium">
                       {profile.ethnicity}
                       {profile.age_range && `, ${profile.age_range}`}
                     </p>
