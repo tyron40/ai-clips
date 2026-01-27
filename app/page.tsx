@@ -4,14 +4,12 @@ import { useState, useEffect } from 'react';
 import UnifiedCommandPrompt from '@/components/UnifiedCommandPrompt';
 import VideoResult from '@/components/VideoResult';
 import VideoGallery from '@/components/VideoGallery';
-import GenerationModeSelector, { GenerationMode } from '@/components/GenerationModeSelector';
-import MotivationalVideoForm from '@/components/MotivationalVideoForm';
+import { GenerationMode } from '@/components/GenerationModeSelector';
 import Navigation from '@/components/Navigation';
 import VideoGalleryView from '@/components/VideoGalleryView';
-import BatchVideoResults from '@/components/BatchVideoResults';
 import { supabase, VideoRecord } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { History, Plus, ArrowLeft } from 'lucide-react';
+import { History, Plus } from 'lucide-react';
 
 interface VideoState {
   id: string;
@@ -31,9 +29,6 @@ export default function Home() {
   const [pollingError, setPollingError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'home' | 'gallery'>('home');
   const [showGallery, setShowGallery] = useState(false);
-  const [batchVideos, setBatchVideos] = useState<Array<{ id: string; prompt: string }> | null>(null);
-  const [generationMode, setGenerationMode] = useState<GenerationMode>('luma');
-  const [showModeSelector, setShowModeSelector] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -158,30 +153,7 @@ export default function Home() {
     setVideoState(null);
     setPollingError(null);
     setShowGallery(false);
-    setBatchVideos(null);
-    setShowModeSelector(false);
     localStorage.removeItem(STORAGE_KEY);
-  };
-
-  const handleBatchSubmit = async (videos: Array<{ id: string; prompt: string }>) => {
-    setBatchVideos(videos);
-
-    if (user) {
-      try {
-        const videoRecords = videos.map(video => ({
-          user_id: user.id,
-          luma_id: video.id,
-          prompt: video.prompt,
-          duration: '5s',
-          status: 'queued' as const,
-          generation_mode: 'luma' as const,
-        }));
-
-        await supabase.from('videos').insert(videoRecords);
-      } catch (err) {
-        console.error('Failed to save batch videos to database:', err);
-      }
-    }
   };
 
   const handleSelectVideo = (video: VideoRecord) => {
@@ -222,58 +194,11 @@ export default function Home() {
             </header>
 
             <main className="main">
-              {!videoState && !showGallery && !batchVideos && !showModeSelector && (
-                <>
-                  <div style={{ marginBottom: '24px', textAlign: 'center' }}>
-                    <button
-                      onClick={() => setShowModeSelector(true)}
-                      className="submit-button"
-                      style={{ maxWidth: '400px', margin: '0 auto' }}
-                    >
-                      View All Generation Modes
-                    </button>
-                  </div>
-                  <UnifiedCommandPrompt onSubmit={handleVideoCreated} onBatchSubmit={handleBatchSubmit} />
-                </>
+              {!videoState && !showGallery && (
+                <UnifiedCommandPrompt onSubmit={handleVideoCreated} />
               )}
 
-              {!videoState && !showGallery && !batchVideos && showModeSelector && (
-                <>
-                  <button
-                    onClick={() => setShowModeSelector(false)}
-                    className="cancel-button"
-                    style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}
-                  >
-                    <ArrowLeft size={16} />
-                    Back to Quick Start
-                  </button>
-
-                  <GenerationModeSelector
-                    selectedMode={generationMode}
-                    onSelectMode={setGenerationMode}
-                  />
-
-                  {generationMode === 'motivational' && (
-                    <div style={{ marginTop: '24px' }}>
-                      <MotivationalVideoForm />
-                    </div>
-                  )}
-
-                  {generationMode !== 'motivational' && (
-                    <div style={{ marginTop: '24px' }}>
-                      <p style={{ textAlign: 'center', color: '#888' }}>
-                        This mode is available in the Quick Start interface above. Click "Back to Quick Start" to use it.
-                      </p>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {!videoState && showGallery && !batchVideos && <VideoGallery onSelectVideo={handleSelectVideo} />}
-
-              {batchVideos && (
-                <BatchVideoResults videos={batchVideos} onClose={handleReset} />
-              )}
+              {!videoState && showGallery && <VideoGallery onSelectVideo={handleSelectVideo} />}
 
               {videoState && videoState.status !== 'completed' && (
                 <div className="progress-area">
