@@ -7,9 +7,13 @@ import VideoGallery from '@/components/VideoGallery';
 import { GenerationMode } from '@/components/GenerationModeSelector';
 import Navigation from '@/components/Navigation';
 import VideoGalleryView from '@/components/VideoGalleryView';
+import InfluencerLibrary from '@/components/InfluencerLibrary';
+import TemplatePromptBuilder from '@/components/TemplatePromptBuilder';
+import BatchContentGenerator from '@/components/BatchContentGenerator';
 import { supabase, VideoRecord } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { History, Plus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface VideoState {
   id: string;
@@ -27,7 +31,7 @@ export default function Home() {
   const { user } = useAuth();
   const [videoState, setVideoState] = useState<VideoState | null>(null);
   const [pollingError, setPollingError] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'home' | 'gallery'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'gallery' | 'influencers'>('home');
   const [showGallery, setShowGallery] = useState(false);
 
   useEffect(() => {
@@ -173,6 +177,25 @@ export default function Home() {
       <div className="container">
         {currentView === 'gallery' && user ? (
           <VideoGalleryView />
+        ) : currentView === 'influencers' && user ? (
+          <div className="influencer-page">
+            <Tabs defaultValue="library" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsTrigger value="library">My Influencers</TabsTrigger>
+                <TabsTrigger value="builder">Prompt Builder</TabsTrigger>
+                <TabsTrigger value="batch">Batch Generator</TabsTrigger>
+              </TabsList>
+              <TabsContent value="library">
+                <InfluencerLibrary />
+              </TabsContent>
+              <TabsContent value="builder">
+                <TemplatePromptBuilder />
+              </TabsContent>
+              <TabsContent value="batch">
+                <BatchContentGenerator />
+              </TabsContent>
+            </Tabs>
+          </div>
         ) : (
           <>
             <header className="header">

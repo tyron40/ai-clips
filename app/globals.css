@@ -1977,3 +1977,15 @@ body {
     font-size: 0.7rem;
   }
 }
+
+.influencer-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .influencer-page {
+    padding: 1rem;
+  }
+}

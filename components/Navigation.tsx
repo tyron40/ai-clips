@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Video, User, LogOut, Menu, X } from 'lucide-react';
+import { Video, User, LogOut, Menu, X, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { signOut } from '@/lib/auth';
 import AuthModal from './AuthModal';
 
 interface NavigationProps {
-  onNavigate: (view: 'home' | 'gallery') => void;
-  currentView: 'home' | 'gallery';
+  onNavigate: (view: 'home' | 'gallery' | 'influencers') => void;
+  currentView: 'home' | 'gallery' | 'influencers';
 }
 
 export default function Navigation({ onNavigate, currentView }: NavigationProps) {
@@ -53,15 +53,27 @@ export default function Navigation({ onNavigate, currentView }: NavigationProps)
             </button>
 
             {user && (
-              <button
-                className={`nav-link ${currentView === 'gallery' ? 'nav-link-active' : ''}`}
-                onClick={() => {
-                  onNavigate('gallery');
-                  setMobileMenuOpen(false);
-                }}
-              >
-                My Videos
-              </button>
+              <>
+                <button
+                  className={`nav-link ${currentView === 'gallery' ? 'nav-link-active' : ''}`}
+                  onClick={() => {
+                    onNavigate('gallery');
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  My Videos
+                </button>
+                <button
+                  className={`nav-link ${currentView === 'influencers' ? 'nav-link-active' : ''}`}
+                  onClick={() => {
+                    onNavigate('influencers');
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Sparkles size={16} style={{ display: 'inline', marginRight: '4px' }} />
+                  AI Influencers
+                </button>
+              </>
             )}
           </div>
 

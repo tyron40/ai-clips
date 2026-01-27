@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, Play, Calendar } from 'lucide-react';
+import { Trash2, Play, Calendar, Filter } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,6 +12,12 @@ interface Video {
   audio_url: string | null;
   created_at: string;
   generation_mode: string;
+  influencer_profile_id: string | null;
+}
+
+interface InfluencerProfile {
+  id: string;
+  name: string;
 }
 
 export default function VideoGalleryView() {
@@ -20,14 +26,40 @@ export default function VideoGalleryView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [profiles, setProfiles] = useState<InfluencerProfile[]>([]);
+  const [selectedProfileFilter, setSelectedProfileFilter] = useState<string>('all');
   const modalVideoRef = useRef<HTMLVideoElement>(null);
   const modalAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (user) {
       loadVideos();
+      loadProfiles();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadVideos();
+    }
+  }, [selectedProfileFilter]);
+
+  const loadProfiles = async () => {
+    if (!user) return;
+
+    try {
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from('influencer_profiles')
+        .select('id, name')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      setProfiles(data || []);
+    } catch (err) {
+      console.error('Failed to load profiles:', err);
+    }
+  };
 
   const loadVideos = async () => {
     if (!user) return;
@@ -37,11 +69,20 @@ export default function VideoGalleryView() {
 
     try {
       const supabase = createClient();
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('videos')
         .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .eq('user_id', user.id);
+
+      if (selectedProfileFilter !== 'all') {
+        if (selectedProfileFilter === 'none') {
+          query = query.is('influencer_profile_id', null);
+        } else {
+          query = query.eq('influencer_profile_id', selectedProfileFilter);
+        }
+      }
+
+      const { data, error: fetchError } = await query.order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
       setVideos(data || []);
@@ -115,8 +156,37 @@ export default function VideoGalleryView() {
 
   return (
     <div className="gallery-container">
-      <h2>My Video Gallery</h2>
-      <p className="gallery-subtitle">{videos.length} video{videos.length !== 1 ? 's' : ''} created</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div>
+          <h2>My Video Gallery</h2>
+          <p className="gallery-subtitle">{videos.length} video{videos.length !== 1 ? 's' : ''} created</p>
+        </div>
+        {profiles.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Filter size={20} style={{ color: '#d97706' }} />
+            <select
+              value={selectedProfileFilter}
+              onChange={(e) => setSelectedProfileFilter(e.target.value)}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                border: '2px solid #d97706',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                background: 'white',
+              }}
+            >
+              <option value="all">All Videos</option>
+              <option value="none">No Influencer</option>
+              {profiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       <div className="gallery-grid">
         {videos.map((video) => (
