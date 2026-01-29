@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { Upload, Image as ImageIcon, Volume2, Sparkles } from 'lucide-react';
+import { useState, FormEvent, useEffect } from 'react';
+import { Upload, Image as ImageIcon, Volume2, Sparkles, User } from 'lucide-react';
 import UploadImage from './UploadImage';
 import { generateAudioFromText } from '@/lib/generateAudio';
 import { enhancePromptWithImage, validatePrompt } from '@/lib/promptEnhancer';
 import { GenerationMode } from './GenerationModeSelector';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UnifiedCommandPromptProps {
   onSubmit: (
@@ -19,8 +21,16 @@ interface UnifiedCommandPromptProps {
     images?: string[],
     motionType?: string,
     dialogue?: string,
-    audioUrl?: string
+    audioUrl?: string,
+    profileId?: string
   ) => void;
+}
+
+interface InfluencerProfile {
+  id: string;
+  name: string;
+  base_image_url: string;
+  prompt_template: string;
 }
 
 interface TabOption {
@@ -64,6 +74,7 @@ const tabs: TabOption[] = [
 ];
 
 export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptProps) {
+  const { user } = useAuth();
   const [selectedTab, setSelectedTab] = useState<GenerationMode>('luma');
   const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -75,8 +86,40 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [profiles, setProfiles] = useState<InfluencerProfile[]>([]);
+  const [selectedProfile, setSelectedProfile] = useState<string>('');
+  const [useInfluencer, setUseInfluencer] = useState(false);
 
   const currentTab = tabs.find(t => t.id === selectedTab) || tabs[0];
+
+  useEffect(() => {
+    if (user) {
+      loadProfiles();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (selectedProfile && profiles.length > 0) {
+      const profile = profiles.find(p => p.id === selectedProfile);
+      if (profile && profile.base_image_url) {
+        setImageUrl(profile.base_image_url);
+      }
+    }
+  }, [selectedProfile, profiles]);
+
+  const loadProfiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('influencer_profiles')
+        .select('id, name, base_image_url, prompt_template')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProfiles(data || []);
+    } catch (error: any) {
+      console.error('Failed to load profiles:', error);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -170,11 +213,14 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
         images.length > 0 ? images : undefined,
         motionType,
         dialogue.trim() || undefined,
-        audioUrl || undefined
+        audioUrl || undefined,
+        selectedProfile || undefined
       );
 
       setPrompt('');
-      setImageUrl('');
+      if (!useInfluencer) {
+        setImageUrl('');
+      }
       setSecondImageUrl('');
       setAdditionalImages([]);
       setDialogue('');
@@ -218,23 +264,103 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
       </div>
 
       <form onSubmit={handleSubmit} className="prompt-form">
+        {user && profiles.length > 0 && selectedTab === 'luma' && (
+          <div className="form-group" style={{
+            background: 'linear-gradient(135deg, #fff5eb 0%, #fef3c7 100%)',
+            padding: '20px',
+            borderRadius: '12px',
+            border: '2px solid #fb923c',
+            marginBottom: '24px'
+          }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#9a3412',
+              marginBottom: '12px'
+            }}>
+              <input
+                type="checkbox"
+                checked={useInfluencer}
+                onChange={(e) => {
+                  setUseInfluencer(e.target.checked);
+                  if (!e.target.checked) {
+                    setSelectedProfile('');
+                    setImageUrl('');
+                  }
+                }}
+                style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
+              />
+              <User size={20} />
+              Use AI Influencer Character
+            </label>
+
+            {useInfluencer && (
+              <>
+                <select
+                  value={selectedProfile}
+                  onChange={(e) => setSelectedProfile(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '2px solid #fb923c',
+                    fontSize: '15px',
+                    backgroundColor: 'white',
+                    cursor: 'pointer'
+                  }}
+                  disabled={loading}
+                >
+                  <option value="">Select an influencer character...</option>
+                  {profiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedProfile && (
+                  <p style={{
+                    marginTop: '12px',
+                    fontSize: '14px',
+                    color: '#9a3412',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <Sparkles size={16} />
+                    <strong>Character locked!</strong> The same character will appear consistently in all videos
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         <div className="form-group">
           <label htmlFor="prompt">Your Prompt</label>
           <textarea
             id="prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder={currentTab.placeholder}
+            placeholder={useInfluencer && selectedProfile ? "Describe what your influencer character is doing (e.g., 'walking in the city', 'working out at gym', 'enjoying coffee')..." : currentTab.placeholder}
             rows={4}
             disabled={loading}
             required
           />
+          {useInfluencer && selectedProfile && (
+            <p className="input-hint" style={{ color: '#fb923c', marginTop: '8px' }}>
+              <Sparkles size={14} style={{ display: 'inline', marginRight: '4px' }} />
+              Your selected influencer character will be the main focus of this video
+            </p>
+          )}
         </div>
 
         <div className="form-group">
           <label htmlFor="imageUrl">
             <ImageIcon size={16} style={{ display: 'inline', marginRight: '8px' }} />
-            {selectedTab === 'talking-character' ? 'Character Image (Required)' : 'Primary Image (Optional)'}
+            {selectedTab === 'talking-character' ? 'Character Image (Required)' : useInfluencer ? 'Character Image (Auto-filled)' : 'Primary Image (Optional)'}
           </label>
           <input
             id="imageUrl"
@@ -242,9 +368,15 @@ export default function UnifiedCommandPrompt({ onSubmit }: UnifiedCommandPromptP
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
             placeholder="https://example.com/image.jpg"
-            disabled={loading}
+            disabled={loading || (useInfluencer && selectedProfile !== '')}
+            style={useInfluencer && selectedProfile ? { backgroundColor: '#fef3c7' } : {}}
           />
-          <UploadImage onUploadComplete={setImageUrl} />
+          {!useInfluencer && <UploadImage onUploadComplete={setImageUrl} />}
+          {useInfluencer && selectedProfile && (
+            <p className="input-hint" style={{ color: '#9a3412' }}>
+              Using character image from your selected influencer profile
+            </p>
+          )}
         </div>
 
         {selectedTab === 'talking-character' && (
