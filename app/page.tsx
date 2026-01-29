@@ -121,7 +121,8 @@ export default function Home() {
     images?: string[],
     motionType?: string,
     dialogue?: string,
-    audioUrl?: string
+    audioUrl?: string,
+    profileId?: string
   ) => {
     setVideoState({
       id,
@@ -145,12 +146,22 @@ export default function Home() {
           images: images ? JSON.stringify(images) : undefined,
           motion_type: motionType,
           dialogue,
-          audio_url: audioUrl
+          audio_url: audioUrl,
+          influencer_profile_id: profileId
         });
       } catch (err) {
         console.error('Failed to save video to database:', err);
       }
     }
+  };
+
+  const handleInfluencerVideoGenerated = async (
+    videoId: string,
+    prompt: string,
+    imageUrl?: string,
+    profileId?: string
+  ) => {
+    await handleVideoCreated(videoId, prompt, imageUrl, '5s', 'luma', undefined, undefined, undefined, undefined, undefined, undefined, profileId);
   };
 
   const handleReset = () => {
@@ -189,7 +200,7 @@ export default function Home() {
                 <InfluencerLibrary />
               </TabsContent>
               <TabsContent value="builder">
-                <TemplatePromptBuilder />
+                <TemplatePromptBuilder onVideoGenerated={handleInfluencerVideoGenerated} />
               </TabsContent>
               <TabsContent value="batch">
                 <BatchContentGenerator />

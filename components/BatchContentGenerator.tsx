@@ -138,25 +138,35 @@ export default function BatchContentGenerator() {
       try {
         const response = await fetch('/api/luma/create', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+          cache: 'no-store',
           body: JSON.stringify({
             prompt: batchJobs[i].prompt,
             imageUrl: profile.base_image_url || undefined,
-            mode: 'text',
+            duration: '5s',
           }),
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to create video');
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Invalid response from server');
         }
 
         const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create video');
+        }
 
         await supabase.from('videos').insert({
           user_id: user.id,
           generation_id: data.id,
           prompt: batchJobs[i].prompt,
-          mode: 'text',
+          image_url: profile.base_image_url || null,
+          mode: profile.base_image_url ? 'image' : 'text',
           status: 'pending',
           influencer_profile_id: selectedProfile,
         });

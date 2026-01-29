@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Wand2, Copy, RefreshCw, User } from 'lucide-react';
+import { Wand2, Copy, RefreshCw, User, Video, Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -28,6 +28,7 @@ interface InfluencerProfile {
 
 interface TemplatePromptBuilderProps {
   onPromptGenerated?: (prompt: string, imageUrl: string, profileId: string) => void;
+  onVideoGenerated?: (videoId: string, prompt: string, imageUrl?: string, profileId?: string) => void;
 }
 
 const outfitSuggestions = [
@@ -69,7 +70,7 @@ const activitySuggestions = [
   'interacting with phone',
 ];
 
-export default function TemplatePromptBuilder({ onPromptGenerated }: TemplatePromptBuilderProps) {
+export default function TemplatePromptBuilder({ onPromptGenerated, onVideoGenerated }: TemplatePromptBuilderProps) {
   const [profiles, setProfiles] = useState<InfluencerProfile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [outfit, setOutfit] = useState('');
@@ -77,6 +78,7 @@ export default function TemplatePromptBuilder({ onPromptGenerated }: TemplatePro
   const [activity, setActivity] = useState('');
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [selectedProfileData, setSelectedProfileData] = useState<InfluencerProfile | null>(null);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
 
   useEffect(() => {
     loadProfiles();
@@ -160,6 +162,58 @@ export default function TemplatePromptBuilder({ onPromptGenerated }: TemplatePro
     setOutfit(outfitSuggestions[Math.floor(Math.random() * outfitSuggestions.length)]);
     setLocation(locationSuggestions[Math.floor(Math.random() * locationSuggestions.length)]);
     setActivity(activitySuggestions[Math.floor(Math.random() * activitySuggestions.length)]);
+  };
+
+  const generateVideo = async () => {
+    if (!generatedPrompt) {
+      toast.error('Please generate a prompt first');
+      return;
+    }
+
+    const profile = profiles.find(p => p.id === selectedProfile);
+    if (!profile) {
+      toast.error('Profile not found');
+      return;
+    }
+
+    setIsGeneratingVideo(true);
+
+    try {
+      const response = await fetch('/api/luma/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        cache: 'no-store',
+        body: JSON.stringify({
+          prompt: generatedPrompt,
+          imageUrl: profile.base_image_url || undefined,
+          duration: '5s',
+        }),
+      });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid response from server');
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create video');
+      }
+
+      toast.success('Video generation started!');
+
+      if (onVideoGenerated) {
+        onVideoGenerated(data.id, generatedPrompt, profile.base_image_url, profile.id);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate video');
+    } finally {
+      setIsGeneratingVideo(false);
+    }
   };
 
   return (
@@ -315,7 +369,7 @@ export default function TemplatePromptBuilder({ onPromptGenerated }: TemplatePro
             </div>
 
             {generatedPrompt && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label className="text-base font-semibold">Generated Prompt</Label>
                 <div className="relative">
                   <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-lg border-2 border-orange-200 pr-16 text-base leading-relaxed">
@@ -330,8 +384,28 @@ export default function TemplatePromptBuilder({ onPromptGenerated }: TemplatePro
                     <Copy className="w-5 h-5" />
                   </Button>
                 </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={generateVideo}
+                    disabled={isGeneratingVideo}
+                    size="lg"
+                    className="flex-1"
+                  >
+                    {isGeneratingVideo ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Generating Video...
+                      </>
+                    ) : (
+                      <>
+                        <Video className="w-5 h-5 mr-2" />
+                        Generate Video with Luma AI
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  Use this prompt to generate videos with consistent character appearance
+                  This will use your influencer&apos;s reference image and the generated prompt to create a video
                 </p>
               </div>
             )}
