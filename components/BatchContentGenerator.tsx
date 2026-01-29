@@ -163,11 +163,12 @@ export default function BatchContentGenerator() {
 
         await supabase.from('videos').insert({
           user_id: user.id,
-          generation_id: data.id,
+          luma_id: data.id,
           prompt: batchJobs[i].prompt,
           image_url: profile.base_image_url || null,
-          mode: profile.base_image_url ? 'image' : 'text',
-          status: 'pending',
+          duration: '5s',
+          status: 'queued',
+          generation_mode: 'luma',
           influencer_profile_id: selectedProfile,
         });
 

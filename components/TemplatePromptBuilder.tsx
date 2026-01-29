@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Wand2, Copy, RefreshCw, User, Video, Loader2 } from 'lucide-react';
+import { Wand2, Copy, RefreshCw, User, Video, Loader2, CheckCircle2, XCircle, PlayCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Select,
   SelectContent,
@@ -70,7 +71,16 @@ const activitySuggestions = [
   'interacting with phone',
 ];
 
+interface VideoState {
+  id: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  videoUrl?: string;
+  error?: string;
+  prompt?: string;
+}
+
 export default function TemplatePromptBuilder({ onPromptGenerated, onVideoGenerated }: TemplatePromptBuilderProps) {
+  const { user } = useAuth();
   const [profiles, setProfiles] = useState<InfluencerProfile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [outfit, setOutfit] = useState('');
@@ -78,7 +88,7 @@ export default function TemplatePromptBuilder({ onPromptGenerated, onVideoGenera
   const [activity, setActivity] = useState('');
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [selectedProfileData, setSelectedProfileData] = useState<InfluencerProfile | null>(null);
-  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoState, setVideoState] = useState<VideoState | null>(null);
 
   useEffect(() => {
     loadProfiles();
@@ -91,6 +101,70 @@ export default function TemplatePromptBuilder({ onPromptGenerated, onVideoGenera
       setSelectedProfileData(null);
     }
   }, [selectedProfile]);
+
+  useEffect(() => {
+    if (!videoState || videoState.status === 'completed' || videoState.status === 'failed') {
+      return;
+    }
+
+    const pollStatus = async () => {
+      try {
+        const response = await fetch(`/api/luma/status?id=${videoState.id}`);
+        const contentType = response.headers.get('content-type');
+
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Invalid response from server');
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch status');
+        }
+
+        setVideoState(prev => prev ? {
+          ...prev,
+          status: data.status,
+          videoUrl: data.video_url,
+          error: data.error,
+        } : null);
+
+        if (data.status === 'completed' && data.video_url) {
+          toast.success('Video generated successfully!');
+
+          if (user) {
+            await supabase
+              .from('videos')
+              .update({
+                status: 'completed',
+                video_url: data.video_url,
+                completed_at: new Date().toISOString()
+              })
+              .eq('luma_id', videoState.id);
+          }
+        } else if (data.status === 'failed') {
+          toast.error('Video generation failed: ' + (data.error || 'Unknown error'));
+
+          if (user) {
+            await supabase
+              .from('videos')
+              .update({
+                status: 'failed',
+                error_message: data.error
+              })
+              .eq('luma_id', videoState.id);
+          }
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    };
+
+    const interval = setInterval(pollStatus, 4000);
+    pollStatus();
+
+    return () => clearInterval(interval);
+  }, [videoState?.id, videoState?.status, user]);
 
   const loadProfiles = async () => {
     try {
@@ -170,13 +244,16 @@ export default function TemplatePromptBuilder({ onPromptGenerated, onVideoGenera
       return;
     }
 
+    if (!user) {
+      toast.error('Please sign in to generate videos');
+      return;
+    }
+
     const profile = profiles.find(p => p.id === selectedProfile);
     if (!profile) {
       toast.error('Profile not found');
       return;
     }
-
-    setIsGeneratingVideo(true);
 
     try {
       const response = await fetch('/api/luma/create', {
@@ -204,6 +281,23 @@ export default function TemplatePromptBuilder({ onPromptGenerated, onVideoGenera
         throw new Error(data.error || 'Failed to create video');
       }
 
+      setVideoState({
+        id: data.id,
+        status: 'queued',
+        prompt: generatedPrompt,
+      });
+
+      await supabase.from('videos').insert({
+        user_id: user.id,
+        luma_id: data.id,
+        prompt: generatedPrompt,
+        image_url: profile.base_image_url,
+        duration: '5s',
+        status: 'queued',
+        generation_mode: 'luma',
+        influencer_profile_id: profile.id,
+      });
+
       toast.success('Video generation started!');
 
       if (onVideoGenerated) {
@@ -211,8 +305,6 @@ export default function TemplatePromptBuilder({ onPromptGenerated, onVideoGenera
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to generate video');
-    } finally {
-      setIsGeneratingVideo(false);
     }
   };
 
@@ -387,11 +479,11 @@ export default function TemplatePromptBuilder({ onPromptGenerated, onVideoGenera
                 <div className="flex gap-3">
                   <Button
                     onClick={generateVideo}
-                    disabled={isGeneratingVideo}
+                    disabled={!!videoState && videoState.status !== 'completed' && videoState.status !== 'failed'}
                     size="lg"
                     className="flex-1"
                   >
-                    {isGeneratingVideo ? (
+                    {videoState && videoState.status !== 'completed' && videoState.status !== 'failed' ? (
                       <>
                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                         Generating Video...
@@ -407,6 +499,88 @@ export default function TemplatePromptBuilder({ onPromptGenerated, onVideoGenera
                 <p className="text-sm text-muted-foreground">
                   This will use your influencer&apos;s reference image and the generated prompt to create a video
                 </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {videoState && (
+        <Card className="border-2 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <PlayCircle className="w-6 h-6" />
+              Generated Video
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            {videoState.status === 'queued' && (
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                <div>
+                  <p className="font-medium text-blue-900">Video Queued</p>
+                  <p className="text-sm text-blue-700">Your video is in the queue and will start processing soon...</p>
+                </div>
+              </div>
+            )}
+
+            {videoState.status === 'processing' && (
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                <div>
+                  <p className="font-medium text-blue-900">Processing Video</p>
+                  <p className="text-sm text-blue-700">Your video is being generated. This may take a few minutes...</p>
+                </div>
+              </div>
+            )}
+
+            {videoState.status === 'completed' && videoState.videoUrl && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="font-medium text-green-900">Video Ready!</p>
+                    <p className="text-sm text-green-700">Your video has been generated successfully</p>
+                  </div>
+                </div>
+                <div className="rounded-lg overflow-hidden border-2 border-gray-200">
+                  <video
+                    src={videoState.videoUrl}
+                    controls
+                    className="w-full"
+                    playsInline
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Prompt Used:</p>
+                  <p className="text-sm text-gray-600">{videoState.prompt}</p>
+                </div>
+                <Button
+                  onClick={() => setVideoState(null)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Create Another Video
+                </Button>
+              </div>
+            )}
+
+            {videoState.status === 'failed' && (
+              <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg border-2 border-red-200">
+                <XCircle className="w-5 h-5 text-red-600" />
+                <div className="flex-1">
+                  <p className="font-medium text-red-900">Generation Failed</p>
+                  <p className="text-sm text-red-700">{videoState.error || 'An error occurred during video generation'}</p>
+                </div>
+                <Button
+                  onClick={() => setVideoState(null)}
+                  variant="outline"
+                  size="sm"
+                >
+                  Try Again
+                </Button>
               </div>
             )}
           </CardContent>
